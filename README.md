@@ -1,0 +1,2 @@
+# Autoride
+Discord JS Bot
