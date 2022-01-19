@@ -6,6 +6,8 @@ Discord JS Bot
     - Embed messages (like used in #resources)
     - Color and bingo roles via command (and reactions as well?)
 - Welcome message for potential new runners.
+- Simple polls
+- Reminders, anywhere from minute to months.
 - Wiki integration:
     - Improve the wiki command (auto-capitalization and no extra underscores).
     - Notifications in the #wiki-editor-chat channel when pages are edited/created/deleted.
@@ -26,3 +28,4 @@ Discord JS Bot
 - Data commands:
     - Item value
     - Enemy health
+- Auride says (random)
