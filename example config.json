@@ -1,0 +1,6 @@
+{
+	"comment": "This is an example config. Fill out this information as described and rename this file 'config.json'. You may want to first add your bot to a (test) server, as described here: https://discordjs.guide/preparations/adding-your-bot-to-servers.html.",
+	"token": "First, set up your bot as described here: https://discordjs.guide/preparations/setting-up-a-bot-application.html. Then, go to https://discord.com/developers/applications/. Select your bot application. Click 'Bot' in the left sidebar, then click the 'Copy' button under the 'Token' section. Paste that here.",
+	"clientId": "After setting up your bot, open up its application page, then click 'OAuth2' in the left sidebar. Click the 'Copy' button under the 'CLIENT ID' section. Paste that here.",
+	"guildId": "Within your normal Discord window, open your Settings. In the left sidebar, click 'Advanced'. Enable the 'Developer Mode' switch if you haven't already. Then, close the Settings. In the server bar, right click the server you want to add/have added your bot to. At the bottom of the right-click-menu, click 'Copy ID'. Paste that here."
+}

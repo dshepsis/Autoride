@@ -1,6 +1,9 @@
 # Config
 config.json
 
+# KeyV Sqlite data storage:
+*.sqlite
+
 # Logs
 logs
 *.log

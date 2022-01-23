@@ -19,8 +19,14 @@
   "dependencies": {
     "@discordjs/builders": "^0.11.0",
     "@discordjs/rest": "^0.2.0-canary.0",
+    "@keyv/sqlite": "^2.1.0",
+    "@mapbox/node-pre-gyp": "^1.0.8",
     "discord-api-types": "^0.26.1",
-    "discord.js": "^13.5.1"
+    "discord.js": "^13.5.1",
+    "keyv": "^4.0.5",
+    "sqlite3": "^5.0.2",
+    "tar": "^6.1.11",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "eslint": "^8.6.0"
