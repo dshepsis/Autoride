@@ -16,12 +16,13 @@ async function getSelectableRoles({ roles, rolesFromInteraction, interaction } =
 	return roles;
 }
 
-
 function createRoleSelector({ name, description, roles, rolesFromInteraction } = {}) {
-	// Execute function for slash command:
+	// This function is called when a user uses a slash command:
 	async function execute(interaction) {
 		const selectableRoles = await getSelectableRoles({ roles, rolesFromInteraction, interaction });
 
+		// The roles have to be formatted in a particular way for the Select Menu
+		// component:
 		const selectOptions = Object.entries(selectableRoles).map(([k, v]) => ({
 			label: v,
 			value: k,

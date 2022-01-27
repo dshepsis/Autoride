@@ -1,5 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const Keyv = require('keyv');
+const privilegeLevels = require('../privilegeLevels');
+
 
 // Load configuration database. This will be used to find which color roles
 // the current server has:
@@ -40,10 +42,9 @@ async function getColorRolesIds(guildId) {
 }
 
 module.exports = {
-	data: new SlashCommandBuilder()
+	data: (new SlashCommandBuilder()
 		.setName('manage-colors')
 		.setDescription('Add, remove, and list color roles.')
-		// .setDefaultPermission(false)
 		.addSubcommand(subcommand => subcommand
 			.setName('add')
 			.setDescription('Add a new color role for this server.')
@@ -65,8 +66,10 @@ module.exports = {
 		.addSubcommand(subcommand => subcommand
 			.setName('list')
 			.setDescription('List all of the color roles for this server.')
-		),
-	// autoridePermissions: true,
+		)
+		.setDefaultPermission(false)
+	),
+	minimumPrivilege: privilegeLevels.byName.MOD,
 	async execute(interaction) {
 		const subcommandName = interaction.options.getSubcommand();
 		let content;
@@ -88,7 +91,7 @@ module.exports = {
 				}
 			}
 		}
-		if (subcommandName === 'remove') {
+		else if (subcommandName === 'remove') {
 			const role = interaction.options.getRole('role');
 			const result = await removeColorRole(interaction.guildId, role);
 			if (result === NOT_PRESENT) {
@@ -101,7 +104,7 @@ module.exports = {
 				content = `Failed to remove ${role} from the list of color roles.`;
 			}
 		}
-		if (subcommandName === 'list') {
+		else if (subcommandName === 'list') {
 			const roleIds = await getColorRolesIds(interaction.guildId);
 			if (roleIds === NO_ROLES) {
 				content = 'This server has no color roles. Try using `/manage-colors add` to add some!';
