@@ -1,10 +1,11 @@
 const { MessageActionRow, MessageButton } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
+const privilegeLevels = require('../privilegeLevels');
 
 const MAX_MESSAGES = 100;
 
 module.exports = {
-	data: new SlashCommandBuilder()
+	data: (new SlashCommandBuilder()
 		.setName('prune')
 		.setDescription(`Bulk delete up to ${MAX_MESSAGES} messages.`)
 		.addIntegerOption(option => option
@@ -13,7 +14,10 @@ module.exports = {
 			.setRequired(true)
 			.setMinValue(1)
 			.setMaxValue(MAX_MESSAGES)
-		),
+		)
+		.setDefaultPermission(false)
+	),
+	minimumPrivilege: privilegeLevels.byName.ADMIN,
 	async execute(interaction) {
 		const amount = interaction.options.getInteger('amount');
 

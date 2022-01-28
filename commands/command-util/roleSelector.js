@@ -16,7 +16,14 @@ async function getSelectableRoles({ roles, rolesFromInteraction, interaction } =
 	return roles;
 }
 
-function createRoleSelector({ name, description, roles, rolesFromInteraction } = {}) {
+function createRoleSelector({
+	name, // The name of the command and selector component
+	description, // Command description
+	roles, // optional. An object mapping selectable role ID's to role names. If omitted, rolesFromInteraction must be provided instead.
+	rolesFromInteraction, // optional. A function taking an interaction object and returning a roles object (see above). If omitted, roles must be provided instead.
+	defaultPermission = true, // True if the returned command should be usable by all users by default. False if it should be disabled for all users by default.
+	minimumPrivilege, // optional. What privilege-level the returned command should have if defaultPermission is false. See privilegeLevels.js.
+} = {}) {
 	// This function is called when a user uses a slash command:
 	async function execute(interaction) {
 		const selectableRoles = await getSelectableRoles({ roles, rolesFromInteraction, interaction });
@@ -85,9 +92,12 @@ function createRoleSelector({ name, description, roles, rolesFromInteraction } =
 	}
 
 	return {
-		data: new SlashCommandBuilder()
+		data: (new SlashCommandBuilder()
 			.setName(name)
-			.setDescription(description),
+			.setDescription(description)
+			.setDefaultPermission(defaultPermission)
+		),
+		minimumPrivilege,
 		execute,
 	};
 }

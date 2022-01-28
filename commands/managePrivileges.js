@@ -1,6 +1,7 @@
 const Keyv = require('keyv');
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const privilegeLevels = require('../privilegeLevels');
+const { deployPermissions } = require('../deploy-permissions');
 
 // Load configuration database. This will be used to find which color roles
 // the current server has:
@@ -8,7 +9,12 @@ const privilegedRolesDB = new Keyv('sqlite://database.sqlite', { namespace: 'pri
 privilegedRolesDB.on('error', err => console.log('Connection Error when searching for privilegedRolesDB', err));
 
 const ALREADY_ASSOCIATED = Symbol('This role is already associated with this privilege level in this guild.');
-async function associateRoleWithPrivilegeLevel(guildId, role, privilegeLevelName) {
+async function associateRoleWithPrivilegeLevel({
+	guild,
+	role,
+	privilegeLevelName,
+} = {}) {
+	const guildId = guild.id;
 	const guildPrivilegeLevels = await privilegedRolesDB.get(guildId);
 	if (guildPrivilegeLevels === undefined) {
 		return privilegedRolesDB.set(guildId, { [privilegeLevelName]: role.id });
@@ -17,12 +23,31 @@ async function associateRoleWithPrivilegeLevel(guildId, role, privilegeLevelName
 		return ALREADY_ASSOCIATED;
 	}
 	guildPrivilegeLevels[privilegeLevelName] = role.id;
-	return privilegedRolesDB.set(guildId, guildPrivilegeLevels);
-} // @TODO: FINISH Copying analogous functions from manageColors.js
 
-const NOT_ASSOCIATED = Symbol('This role is not associated with this privilege level in this guild.');
+	// Make sure to wait for the DB to be updated before attempting to deploy
+	// the updated permissions:
+	await privilegedRolesDB.set(guildId, guildPrivilegeLevels);
+
+	// Get command id mapping from guild data:
+	const commandNameToId = Object.create(null);
+	const commands = await guild.commands.fetch();
+	for (const command of commands.values()) {
+		commandNameToId[command.name] = command.id;
+	}
+
+	return deployPermissions({
+		guildId,
+		commandNameToId,
+	});
+}
+
+const NOT_ASSOCIATED = Symbol('This privilege level already has no associated role in this guild.');
 const NO_PRIVILEGES = Symbol('This guild has no roles associated with any privilege levels.');
-async function removeRoleFromPrivilegeLevel(guildId, role, privilegeLevelName) {
+async function removeAssociationsFromPrivilegeLevel({
+	guild,
+	privilegeLevelName,
+} = {}) {
+	const guildId = guild.id;
 	const guildPrivilegeLevels = await privilegedRolesDB.get(guildId);
 	if (guildPrivilegeLevels === undefined) {
 		return NO_PRIVILEGES;
@@ -31,7 +56,22 @@ async function removeRoleFromPrivilegeLevel(guildId, role, privilegeLevelName) {
 		return NOT_ASSOCIATED;
 	}
 	delete guildPrivilegeLevels[privilegeLevelName];
-	return privilegedRolesDB.set(guildId, guildPrivilegeLevels);
+
+	// Make sure to wait for the DB to be updated before attempting to deploy
+	// the updated permissions:
+	await privilegedRolesDB.set(guildId, guildPrivilegeLevels);
+
+	// Get command id mapping from guild data:
+	const commandNameToId = Object.create(null);
+	const commands = await guild.commands.fetch();
+	for (const command of commands.values()) {
+		commandNameToId[command.name] = command.id;
+	}
+
+	return deployPermissions({
+		guildId,
+		commandNameToId,
+	});
 }
 
 async function getPrivilegeLevelAssociationsString(guildId) {
@@ -46,6 +86,14 @@ async function getPrivilegeLevelAssociationsString(guildId) {
 			: `<@&${privilegedRoleId}>`;
 		return `${roleStr} - ${p.name} - ${p.description}`;
 	}).join('\n');
+}
+
+async function getRoleIdAssociatedWithPrivilegeLevel({
+	guild,
+	privilegeLevelName,
+} = {}) {
+	const guildPrivilegeLevels = await privilegedRolesDB.get(guild.id);
+	return guildPrivilegeLevels[privilegeLevelName];
 }
 
 module.exports = {
@@ -69,15 +117,10 @@ module.exports = {
 		)
 		.addSubcommand(subcommand => subcommand
 			.setName('remove')
-			.setDescription('Removes the association between the given role and privilege level.')
-			.addRoleOption(option => option
-				.setName('role')
-				.setDescription('The role to associate with the given privilege level.')
-				.setRequired(true)
-			)
+			.setDescription('Removes the role associated with the given privilege level.')
 			.addStringOption(option => option
 				.setName('privilege-level')
-				.setDescription('The privilege level to associate the given role with.')
+				.setDescription('The privilege level from which to remove its associated role.')
 				.setRequired(true)
 				.setChoices(privilegeLevels.asChoices)
 			)
@@ -88,14 +131,23 @@ module.exports = {
 		)
 		.setDefaultPermission(false)
 	),
+	minimumPrivilege: privilegeLevels.MASTER_USER_ONLY,
 	async execute(interaction) {
-		const guildId = interaction.guildId;
+		const guild = interaction.guild;
 		const subcommandName = interaction.options.getSubcommand();
 		let content;
 		if (subcommandName === 'associate') {
 			const role = interaction.options.getRole('role');
+			if (role.name === '@everyone') {
+				content = 'You cannot associated the @everyone role with a privilege!';
+				return interaction.reply({ content });
+			}
 			const privilegeLevelName = interaction.options.getString('privilege-level');
-			const result = await associateRoleWithPrivilegeLevel(guildId, role, privilegeLevelName);
+			const result = await associateRoleWithPrivilegeLevel({
+				guild,
+				role,
+				privilegeLevelName,
+			});
 			if (result === ALREADY_ASSOCIATED) {
 				content = `${role} is already associated with the privilege level ${privilegeLevelName}.`;
 			}
@@ -107,11 +159,18 @@ module.exports = {
 			}
 		}
 		else if (subcommandName === 'remove') {
-			const role = interaction.options.getRole('role');
 			const privilegeLevelName = interaction.options.getString('privilege-level');
-			const result = await removeRoleFromPrivilegeLevel(guildId, role, privilegeLevelName);
+			const roleId = await getRoleIdAssociatedWithPrivilegeLevel({
+				guild,
+				privilegeLevelName,
+			});
+			const role = `<@&${roleId}>`;
+			const result = await removeAssociationsFromPrivilegeLevel({
+				guild,
+				privilegeLevelName,
+			});
 			if (result === NOT_ASSOCIATED) {
-				content = `${role} already isn't associated with the privilege level ${privilegeLevelName}.`;
+				content = `The privilege level ${privilegeLevelName} already had no associated role.`;
 			}
 			else if (result) {
 				content = `Successfully removed ${role} from the privilege level ${privilegeLevelName}.`;
@@ -121,6 +180,7 @@ module.exports = {
 			}
 		}
 		else if (subcommandName === 'list') {
+			const guildId = guild.id;
 			content = await getPrivilegeLevelAssociationsString(guildId);
 		}
 		return interaction.reply({ content });

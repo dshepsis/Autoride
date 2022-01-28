@@ -24,10 +24,13 @@ for (let i = 0, len = byOrder.length; i < len; ++i) {
 	priv.priority = i;
 	byName[priv.name] = priv;
 }
-// Object.freeze(byName); // ??? Is this necessary?
 
 // Format the privilege level names as choices usable for setChoices() in
 // setChoices() in .addStringOption() in SlashCommandBuilders:
 const asChoices = byOrder.map(p => ([p.name, p.name]));
 
-module.exports = { byOrder, byName, asChoices };
+// A special value used in place of .byName[privilege level name]:
+// e.g. `minimumPrivilege: privilegeLevels.MASTER_USER_ONLY,`
+const MASTER_USER_ONLY = 'Only the master user (bot owner) may use this command.';
+
+module.exports = { byOrder, byName, asChoices, MASTER_USER_ONLY };
