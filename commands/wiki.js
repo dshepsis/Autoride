@@ -7,17 +7,17 @@ module.exports = {
 		.setName('wiki')
 		.setDescription('Get a link to a page on the Okami Speedrunning Wiki.')
 		.addStringOption(option => option
-			.setName('query')
-			.setDescription('A string to search the wiki for, such as a page title.')
+			.setName('title')
+			.setDescription('What string to search page titles for')
 			.setRequired(true)
 		)
 	),
 	async execute(interaction) {
-		const query = interaction.options.getString('query');
+		const query = interaction.options.getString('title');
 		const queryURL = `${WIKI_API_BASE}action=query&list=search&srsearch=${query}&srlimit=1&format=json`;
 		const response = (await fetchJson(queryURL)).query.search[0];
 		if (response === undefined) {
-			const content = `Didn't find any pages matching the query "${query}".`;
+			const content = `Didn't find any pages with titles matching "${query}".\nTry this wiki search link instead: https://okami.speedruns.wiki/index.php?search=${query}`;
 			return interaction.reply({ content });
 		}
 
