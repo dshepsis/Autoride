@@ -22,8 +22,8 @@ const { clientId, token, masterUserId } = require('./config.json');
 const privilegeLevels = require('./privilegeLevels');
 const Keyv = require('keyv');
 
-// Load configuration database. This will be used to find which color roles
-// the current server has:
+// Load configuration database. This will be used to find which privilege
+// privilege levels are associated with which roles in this guild
 const privilegedRolesDB = new Keyv('sqlite://database.sqlite', { namespace: 'privilegedRoles' });
 privilegedRolesDB.on('error', err => console.log('Connection Error when searching for privilegedRolesDB', err));
 

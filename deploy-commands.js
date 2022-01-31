@@ -5,9 +5,12 @@ const { clientId, guildId, token } = require('./config.json');
 const { deployPermissions } = require('./deploy-permissions');
 
 const Keyv = require('keyv');
+
+// Used to store some extra command data which isn't sent to Discord, such as
+// the minimumPrivilege property for commands with permissions. This data is
+// then read in deploy-permissions.js.
 const commandMetadataDB = new Keyv('sqlite://database.sqlite', { namespace: 'commandMetadata' });
 commandMetadataDB.on('error', err => console.log('Connection Error when searching for commandMetadataDB', err));
-
 
 // An array of SlashCommandBuilder objects for every command:
 const commandData = [];
@@ -35,11 +38,12 @@ for (const file of commandFileNames) {
 	}
 	commandNameToMinPrivs[command.data.name] = minimumPrivilege;
 }
+// Queue up a task to update the metadata Keyv store:
+const updateMetadataPromise = commandMetadataDB.set('minPrivileges', commandNameToMinPrivs);
 
 const rest = new REST({ version: '9' }).setToken(token);
 
 (async () => {
-	await commandMetadataDB.set('minPrivileges', commandNameToMinPrivs);
 	try {
 		console.log('Registering application commands...');
 		const response = await rest.put(
@@ -53,7 +57,8 @@ const rest = new REST({ version: '9' }).setToken(token);
 		for (const command of response) {
 			commandNameToId[command.name] = command.id;
 		}
-
+		// Make sure that the Keyv store has been updated:
+		await updateMetadataPromise;
 		await deployPermissions({
 			guildId,
 			commandNameToId,
