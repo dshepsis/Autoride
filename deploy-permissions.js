@@ -13,8 +13,6 @@
 // the "MOD" priority level is assigned to the "borks" role in the
 // Okami speedrunning discord. These assignments are stored via keyv in the
 // privilegedRoles namespace of database.sqlite.
-
-const fs = require('node:fs');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 const { clientId, token, masterUserId } = require('./config.json');
@@ -24,13 +22,25 @@ const Keyv = require('keyv');
 
 // Load configuration database. This will be used to find which privilege
 // privilege levels are associated with which roles in this guild
-const privilegedRolesDB = new Keyv('sqlite://database.sqlite', { namespace: 'privilegedRoles' });
-privilegedRolesDB.on('error', err => console.log('Connection Error when searching for privilegedRolesDB', err));
+const privilegedRolesDB = new Keyv(
+	'sqlite://database.sqlite',
+	{ namespace: 'privilegedRoles' }
+);
+privilegedRolesDB.on('error', err => console.log(
+	'Connection Error when searching for privilegedRolesDB',
+	err
+));
 
 // This database contains the .minimumPrivilege properties for each command.
 // It's updated when deploy-command.js is run:
-const commandMetadataDB = new Keyv('sqlite://database.sqlite', { namespace: 'commandMetadata' });
-commandMetadataDB.on('error', err => console.log('Connection Error when searching for commandMetadataDB', err));
+const commandMetadataDB = new Keyv(
+	'sqlite://database.sqlite',
+	{ namespace: 'commandMetadata' }
+);
+commandMetadataDB.on('error', err => console.log(
+	'Connection Error when searching for commandMetadataDB',
+	err
+));
 
 async function deployPermissions({
 	// The id of the guild to which to apply the command permission overwrites:
@@ -55,7 +65,8 @@ async function deployPermissions({
 	// simultaneously:
 	const fullPermissions = [];
 
-	// May be undefined if privileged roles haven't been configured for this guild yet:
+	// May be undefined if privileged roles haven't been configured for this guild
+	// yet:
 	const privilegedRolesForThisGuild = await privilegedRolesDB.get(guildId);
 
 	for (const commandName in commandNameToMinPrivs) {
@@ -82,7 +93,8 @@ async function deployPermissions({
 			continue;
 		}
 
-		// Whitelist the minimum-privileged role, and every more privileged role (lower priority):
+		// Whitelist the minimum-privileged role, and every more privileged role
+		// (lower priority):
 		const minPrivilegePriority = currentCommandMinPriv.priority;
 		for (let i = minPrivilegePriority; i >= 0; --i) {
 			// NOTE: If privilegedRolesForThisGuild is undefined (privileged roles

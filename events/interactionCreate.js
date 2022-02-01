@@ -16,7 +16,8 @@ module.exports = {
 			}
 			catch (error) {
 				console.error(error);
-				return interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+				const content = 'There was an error while executing this command!';
+				return interaction.reply({ content, ephemeral: true });
 			}
 		}
 	},

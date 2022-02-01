@@ -3,10 +3,16 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const privilegeLevels = require('../privilegeLevels');
 const { deployPermissions } = require('../deploy-permissions');
 
-// Load configuration database. This will be used to find which color roles
-// the current server has:
-const privilegedRolesDB = new Keyv('sqlite://database.sqlite', { namespace: 'privilegedRoles' });
-privilegedRolesDB.on('error', err => console.log('Connection Error when searching for privilegedRolesDB', err));
+// Load configuration database. This will be used to find which privilege
+// privilege levels are associated with which roles in this guild
+const privilegedRolesDB = new Keyv(
+	'sqlite://database.sqlite',
+	{ namespace: 'privilegedRoles' }
+);
+privilegedRolesDB.on('error', err => console.log(
+	'Connection Error when searching for privilegedRolesDB',
+	err
+));
 
 const ALREADY_ASSOCIATED = Symbol('This role is already associated with this privilege level in this guild.');
 async function associateRoleWithPrivilegeLevel({
@@ -77,7 +83,10 @@ async function removeAssociationsFromPrivilegeLevel({
 async function getPrivilegeLevelAssociationsString(guildId) {
 	const guildPrivilegeLevels = await privilegedRolesDB.get(guildId);
 	if (guildPrivilegeLevels === undefined) {
-		return privilegeLevels.byOrder.map(p => `UNASSOCIATED - ${p.name} - ${p.description}`).join('\n');
+		return (privilegeLevels.byOrder
+			.map(p => `UNASSOCIATED - ${p.name} - ${p.description}`)
+			.join('\n')
+		);
 	}
 	return privilegeLevels.byOrder.map(p => {
 		const privilegedRoleId = guildPrivilegeLevels[p.name];

@@ -22,7 +22,7 @@ module.exports = {
 		const amount = interaction.options.getInteger('amount');
 
 		if (amount < 1 || amount > MAX_MESSAGES) {
-			const content = `You must choose a number between 1 and ${MAX_MESSAGES} (inclusive).`;
+			const content = `You must choose a number of messages to delete between 1 and ${MAX_MESSAGES} (inclusive).`;
 			return interaction.reply({ content, ephemeral: true });
 		}
 
@@ -40,7 +40,10 @@ module.exports = {
 		const warningMessage = await interaction.fetchReply();
 
 		// Create the collector:
-		const filter = (warningInteraction) => warningInteraction.customId === CUSTOM_ID && warningInteraction.user.id === interaction.user.id;
+		const filter = warningInteraction => (
+			warningInteraction.customId === CUSTOM_ID
+			&& warningInteraction.user.id === interaction.user.id
+		);
 		const IDLE_TIMEOUT = 30000; // milliseconds
 		let buttonInteraction;
 		try {
@@ -49,7 +52,9 @@ module.exports = {
 			);
 		}
 		catch (error) {
-			const content = `This \`/prune\` command timed out after ${Math.floor(IDLE_TIMEOUT / 1000)} seconds. Please dismiss this message and use the command again if needed.`;
+			const content = `This \`/prune\` command timed out after ${
+				Math.floor(IDLE_TIMEOUT / 1000)
+			} seconds. Please dismiss this message and use the command again if needed.`;
 			return interaction.editReply({ content, components: [], ephemeral: true });
 		}
 		if (buttonInteraction.customId !== CUSTOM_ID) {

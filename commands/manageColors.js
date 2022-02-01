@@ -63,6 +63,11 @@ module.exports = {
 				.setRequired(true)
 			)
 		)
+		// @TODO implement a way to re-arrange the order of color roles in the keyv store:
+		// .addSubcommand(subcommand => subcommand
+		// 	.setName('arrange')
+		// 	.setDescription('Change the order in which color roles are presented.')
+		// )
 		.addSubcommand(subcommand => subcommand
 			.setName('list')
 			.setDescription('List all of the color roles for this server.')

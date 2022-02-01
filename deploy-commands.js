@@ -15,7 +15,10 @@ commandMetadataDB.on('error', err => console.log('Connection Error when searchin
 // An array of SlashCommandBuilder objects for every command:
 const commandData = [];
 
-const commandFileNames = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+const commandFileNames = (fs
+	.readdirSync('./commands')
+	.filter(file => file.endsWith('.js'))
+);
 
 // For every js file in the commands folder, read its .data property. If it's
 // a command with setDefaultPermission(false), then also read its required
@@ -39,7 +42,10 @@ for (const file of commandFileNames) {
 	commandNameToMinPrivs[command.data.name] = minimumPrivilege;
 }
 // Queue up a task to update the metadata Keyv store:
-const updateMetadataPromise = commandMetadataDB.set('minPrivileges', commandNameToMinPrivs);
+const updateMetadataPromise = commandMetadataDB.set(
+	'minPrivileges',
+	commandNameToMinPrivs
+);
 
 const rest = new REST({ version: '9' }).setToken(token);
 

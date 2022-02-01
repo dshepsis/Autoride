@@ -5,7 +5,10 @@ const { token } = require('./config.json');
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 
 // Get list of command modules from /commands directory
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+const commandFiles = (fs
+	.readdirSync('./commands')
+	.filter(file => file.endsWith('.js'))
+);
 
 // Import each command module and save it to a collection
 client.commands = new Collection();
@@ -15,7 +18,10 @@ for (const file of commandFiles) {
 }
 
 // Get a list of event modules from the /events directory
-const eventFiles = fs.readdirSync('./events').filter(file => file.endsWith('.js'));
+const eventFiles = (fs
+	.readdirSync('./events')
+	.filter(file => file.endsWith('.js'))
+);
 
 // Attach event listeners declared in each event module
 for (const file of eventFiles) {

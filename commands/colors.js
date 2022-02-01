@@ -3,7 +3,10 @@ const Keyv = require('keyv');
 
 // Load configuration database. This will be used to find which color roles
 // the current server has:
-const colorRolesDB = new Keyv('sqlite://database.sqlite', { namespace: 'colorRoles' });
+const colorRolesDB = new Keyv(
+	'sqlite://database.sqlite',
+	{ namespace: 'colorRoles' }
+);
 
 module.exports = createRoleSelector({
 	name: 'colors',
