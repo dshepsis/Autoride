@@ -20,6 +20,10 @@ async function getSelectableRoles({
 	return roles;
 }
 
+// The maximum number of options on a select menu permitted by Discord's API
+// See: https://discord.com/developers/docs/interactions/message-components#select-menu-object-select-menu-structure
+const MAX_PAGE_SIZE = 25;
+
 function createRoleSelector({
 	// The name of the command and selector component
 	name,
@@ -37,7 +41,23 @@ function createRoleSelector({
 	// Optional - What privilege-level the returned command should have if
 	// defaultPermission is false. See privilegeLevels.js.
 	minimumPrivilege,
+	// Optional - If true, the roles will be sorted based on the order they're
+	// listed in the server's role settings. If false, they will be in the order
+	// given by the roles/rolesFromInteraction parameter.
+	sortByGuildOrder = false,
+	// Optional - How many roles should be listed on each selection page. If there
+	// are fewer roles than this value, pagination will not be used. Must be an
+	// integer between 1 and MAX_PAGE_SIZE. Ensure that the number of roles
+	// divided by the page size is also less than MAX_PAGE_SIZE.
+	pageSize = MAX_PAGE_SIZE,
 } = {}) {
+	if (pageSize < 1) {
+		throw new RangeError(`For createRoleSelector, pageSize must be greater than 1 and less than ${MAX_PAGE_SIZE}. Instead got ${pageSize}.`);
+	}
+	if (!Number.isInteger(pageSize)) {
+		throw new RangeError(`For createRoleSelector, pageSize must be an integer. Instead got ${pageSize}.`);
+	}
+
 	// This function is called when a user uses a slash command:
 	async function execute(interaction) {
 		const selectableRoles = await getSelectableRoles({
@@ -46,34 +66,88 @@ function createRoleSelector({
 			interaction,
 		});
 
+		const allRoleIds = Object.keys(selectableRoles);
+
+		const numRoles = allRoleIds.length;
+		if (numRoles === 0) {
+			const content = `No roles were provided for the ${name} command!`;
+			return interaction.reply({ content, ephemeral: true });
+		}
+
+		// Select menus only allow 25 options at a time, maximum. We can circumvent
+		// this restriction by having a pagination system:
+		const numPages = Math.ceil(numRoles / pageSize);
+
+		if (numPages > MAX_PAGE_SIZE) {
+			throw new RangeError(`Because page size was set to ${pageSize} and the number of roles is ${numRoles}, the number of pages should be ${numPages}, but no more than ${MAX_PAGE_SIZE} pages are allowed. To fix this, either increase ${pageSize} or decrease the number of selectable roles!`);
+		}
+
+		if (sortByGuildOrder) {
+			allRoleIds.sort((r1, r2) => interaction.guild.roles.comparePositions(r2, r1));
+		}
+
 		// The roles have to be formatted in a particular way for the Select Menu
 		// component:
-		const selectOptions = Object.entries(selectableRoles).map(([k, v]) => ({
-			label: v,
-			value: k,
+		const allSelectOptions = allRoleIds.map(id => ({
+			label: selectableRoles[id],
+			value: id,
 		}));
 
-		// Configure the selection box with role options:
-		const row = new MessageActionRow().addComponents(
-			new MessageSelectMenu()
+		let currentPage = 0;
+		function getCurrentRoleSelectRow() {
+			const firstIndex = currentPage * pageSize;
+			const options = allSelectOptions.slice(
+				firstIndex,
+				firstIndex + pageSize
+			);
+			return new MessageActionRow().addComponents(new MessageSelectMenu()
 				.setCustomId(name)
 				.setPlaceholder('Select a role...')
-				.addOptions(selectOptions),
-		);
+				.addOptions(options)
+			);
+		}
 
-		// A line-separated list of Discord role mentions. When sent as a message
-		// in Discord, the ID's will be resolved to the role names. E.g. the
+		// Returns a line-separated list of Discord role mentions. When sent as a
+		// message in Discord, the ID's will be resolved to the role names. E.g. the
 		// line with a role id for a role named "red" will be rendered as "@red"
 		// in that role's color. This is useful for previewing role colors before
 		// making a selection.
-		const rolesStr = Object.keys(selectableRoles)
-			.map(id => `<@&${id}>`)
-			.join('\n');
+		function getCurrentRolesStr() {
+			const firstIndex = currentPage * pageSize;
+			return (allRoleIds
+				.slice(firstIndex, firstIndex + pageSize)
+				.map(id => `<@&${id}>`)
+				.join('\n')
+			);
+		}
+
+		function getPageSelectRow() {
+			const pageOptions = [];
+			for (let i = 1; i <= numPages; ++i) {
+				const iStr = i.toString();
+				pageOptions.push({ label: iStr, value: iStr });
+			}
+			return new MessageActionRow().addComponents(new MessageSelectMenu()
+				.setCustomId('page')
+				.setPlaceholder(`Go to a page. Currently on page ${currentPage + 1}/${numPages}`)
+				.addOptions(pageOptions)
+			);
+		}
+
+		function getCurrentComponents() {
+			const rows = [getCurrentRoleSelectRow()];
+			if (numPages > 1) rows.push(getPageSelectRow());
+			return rows;
+		}
 
 		// Send the initial reply to the command:
 		{
-			const content = `Choose one of these roles:\n${rolesStr}`;
-			await interaction.reply({ content, components: [row], ephemeral: true });
+			const content = `Choose one of these roles:\n${getCurrentRolesStr()}`;
+			await interaction.reply({
+				content,
+				components: getCurrentComponents(),
+				ephemeral: true,
+			});
 		}
 
 		// Retrieve the reply (with the select box) so that we can attach a
@@ -82,8 +156,7 @@ function createRoleSelector({
 
 		// Create the collector:
 		const filter = selectInteraction => (
-			selectInteraction.customId === name
-			&& selectInteraction.user.id === interaction.user.id
+			selectInteraction.user.id === interaction.user.id
 		);
 		const IDLE_TIMEOUT = 30000; // milliseconds
 		const collector = selectMessage.createMessageComponentCollector(
@@ -93,6 +166,14 @@ function createRoleSelector({
 		// Each time the user makes a selection, assign them the selected role and
 		// remove the other roles they didn't select:
 		collector.on('collect', async (selectInteraction) => {
+			if (selectInteraction.customId === 'page') {
+				currentPage = Number(selectInteraction.values[0]) - 1;
+				const content = `Choose one of these roles:\n${getCurrentRolesStr()}`;
+				return await selectInteraction.update({
+					content,
+					components: getCurrentComponents(),
+				});
+			}
 			const roleIdToAdd = selectInteraction.values[0];
 
 			const userRoles = selectInteraction.member.roles;
@@ -110,7 +191,7 @@ function createRoleSelector({
 				await userRoles.add(roleIdToAdd);
 				content = `You're now <@&${roleIdToAdd}>!`;
 			}
-			content += ` You can still choose:\n${rolesStr}`;
+			content += ` You can still choose:\n${getCurrentRolesStr()}`;
 			return selectInteraction.update({ content, ephemeral: true });
 		});
 
@@ -135,4 +216,4 @@ function createRoleSelector({
 	};
 }
 
-module.exports = { createRoleSelector };
+module.exports = { createRoleSelector, MAX_PAGE_SIZE };

@@ -24,12 +24,7 @@ guildResourcesDB.on('error', err => console.log(
 module.exports = {
 	data: (new SlashCommandBuilder()
 		.setName('manage-resources')
-		.setDescription('Add, remove, and organize resources and links, which can then be easily posted to a resources channel')
-		.addStringOption(option => option
-			.setName('title')
-			.setDescription('What string to search page titles for')
-			.setRequired(true)
-		)
+		.setDescription('Add, remove, and organize resources/links, which can then be posted to a resources channel')
 		.addSubcommand(subcommand => subcommand
 			.setName('post')
 			.setDescription('Post this server\'s resources as an embed to the target channel.')

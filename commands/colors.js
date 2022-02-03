@@ -14,4 +14,6 @@ module.exports = createRoleSelector({
 	async rolesFromInteraction(interaction) {
 		return colorRolesDB.get(interaction.guildId);
 	},
+	sortByGuildOrder: true,
+	pageSize: 10,
 });
