@@ -29,7 +29,9 @@ function createRoleSelector({
 	name,
 	// Command description
 	description,
-	// Optional - An object mapping selectable role ID's to role names. If
+	// Optional - An object mapping selectable role ID's to objects with a name
+	// property (used in the options list) and an optional message property
+	// (included in the message sent when a role is successfully selected). If
 	// omitted, rolesFromInteraction must be provided instead.
 	roles,
 	// Optional - A function taking an interaction object and returning a roles
@@ -73,11 +75,7 @@ function createRoleSelector({
 			const content = `No roles were provided for the ${name} command!`;
 			return interaction.reply({ content, ephemeral: true });
 		}
-
-		// Select menus only allow 25 options at a time, maximum. We can circumvent
-		// this restriction by having a pagination system:
 		const numPages = Math.ceil(numRoles / pageSize);
-
 		if (numPages > MAX_PAGE_SIZE) {
 			throw new RangeError(`Because page size was set to ${pageSize} and the number of roles is ${numRoles}, the number of pages should be ${numPages}, but no more than ${MAX_PAGE_SIZE} pages are allowed. To fix this, either increase ${pageSize} or decrease the number of selectable roles!`);
 		}
@@ -89,7 +87,7 @@ function createRoleSelector({
 		// The roles have to be formatted in a particular way for the Select Menu
 		// component:
 		const allSelectOptions = allRoleIds.map(id => ({
-			label: selectableRoles[id],
+			label: selectableRoles[id].name,
 			value: id,
 		}));
 
@@ -107,7 +105,7 @@ function createRoleSelector({
 			);
 		}
 
-		// Returns a line-separated list of Discord role mentions. When sent as a
+		// Returns a \n-separated list of Discord role mentions. When sent as a
 		// message in Discord, the ID's will be resolved to the role names. E.g. the
 		// line with a role id for a role named "red" will be rendered as "@red"
 		// in that role's color. This is useful for previewing role colors before
@@ -166,6 +164,7 @@ function createRoleSelector({
 		// Each time the user makes a selection, assign them the selected role and
 		// remove the other roles they didn't select:
 		collector.on('collect', async (selectInteraction) => {
+			// Handle changing role pages:
 			if (selectInteraction.customId === 'page') {
 				currentPage = Number(selectInteraction.values[0]) - 1;
 				const content = `Choose one of these roles:\n${getCurrentRolesStr()}`;
@@ -174,6 +173,8 @@ function createRoleSelector({
 					components: getCurrentComponents(),
 				});
 			}
+
+			// Otherwise, handle role selection:
 			const roleIdToAdd = selectInteraction.values[0];
 
 			const userRoles = selectInteraction.member.roles;
@@ -189,7 +190,8 @@ function createRoleSelector({
 				}
 				await userRoles.remove(rolesToRemove);
 				await userRoles.add(roleIdToAdd);
-				content = `You're now <@&${roleIdToAdd}>!`;
+				const customMessage = selectableRoles[roleIdToAdd].message;
+				content = customMessage ?? `You're now <@&${roleIdToAdd}>!`;
 			}
 			content += ` You can still choose:\n${getCurrentRolesStr()}`;
 			return selectInteraction.update({ content, ephemeral: true });

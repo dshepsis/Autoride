@@ -9,15 +9,19 @@ const colorRolesDB = new Keyv('sqlite://database.sqlite', { namespace: 'colorRol
 colorRolesDB.on('error', err => console.log('Connection Error when searching for colorRolesDB', err));
 
 const ALREADY_PRESENT = Symbol('Color role is already present in this guild.');
-async function addColorRole(guildId, role) {
+async function addColorRole(guildId, role, message) {
 	const guildColorRoles = await colorRolesDB.get(guildId);
+	const roleData = {
+		name: role.name,
+		message,
+	};
 	if (guildColorRoles === undefined) {
-		return colorRolesDB.set(guildId, { [role.id]: role.name });
+		return colorRolesDB.set(guildId, { [role.id]: roleData });
 	}
 	if (role.id in guildColorRoles) {
 		return ALREADY_PRESENT;
 	}
-	guildColorRoles[role.id] = role.name;
+	guildColorRoles[role.id] = roleData;
 	return colorRolesDB.set(guildId, guildColorRoles);
 }
 
@@ -35,10 +39,35 @@ async function removeColorRole(guildId, role) {
 	return colorRolesDB.set(guildId, guildColorRoles);
 }
 
-async function getColorRolesIds(guildId) {
-	const guildColorRoles = await colorRolesDB.get(guildId);
+const REFORMAT_COLOR_ROLES_DB = false;
+async function getColorRolesStr(interaction) {
+	const guild = interaction.guild;
+	const guildColorRoles = await colorRolesDB.get(guild.id);
 	if (guildColorRoles === undefined) return NO_ROLES;
-	return Object.keys(guildColorRoles);
+	const roleIds = Object.keys(guildColorRoles);
+	// @TODO: Remove this if-block:
+	if (REFORMAT_COLOR_ROLES_DB) {
+		for (const id of roleIds) {
+			const roleVal = guildColorRoles[id];
+			if (typeof roleVal === 'object') {
+				continue;
+			}
+			guildColorRoles[id] = { name: roleVal };
+		}
+		await colorRolesDB.set(guild.id, guildColorRoles);
+	}
+	function idToMessageStr(id) {
+		const message = guildColorRoles[id].message;
+		if (message) {
+			return `"${message}"`;
+		}
+		return 'No message.';
+	}
+	return '__**Role - Message**__\n' + (roleIds
+		.sort((r1, r2) => guild.roles.comparePositions(r2, r1))
+		.map(id => `<@&${id}> - ${idToMessageStr(id)}`)
+		.join('\n')
+	);
 }
 
 module.exports = {
@@ -53,6 +82,10 @@ module.exports = {
 				.setDescription('The role to add to the list of color roles.')
 				.setRequired(true)
 			)
+			.addStringOption(option => option
+				.setName('message')
+				.setDescription('The message to give the user after the role is assigned.')
+			)
 		)
 		.addSubcommand(subcommand => subcommand
 			.setName('remove')
@@ -63,11 +96,6 @@ module.exports = {
 				.setRequired(true)
 			)
 		)
-		// @TODO implement a way to re-arrange the order of color roles in the keyv store:
-		// .addSubcommand(subcommand => subcommand
-		// 	.setName('arrange')
-		// 	.setDescription('Change the order in which color roles are presented.')
-		// )
 		.addSubcommand(subcommand => subcommand
 			.setName('list')
 			.setDescription('List all of the color roles for this server.')
@@ -80,11 +108,12 @@ module.exports = {
 		let content;
 		if (subcommandName === 'add') {
 			const role = interaction.options.getRole('role');
+			const message = interaction.options.getString('message');
 			if (role.name === '@everyone') {
 				content = 'You cannot use @everyone as a color role!';
 			}
 			else {
-				const result = await addColorRole(interaction.guildId, role);
+				const result = await addColorRole(interaction.guildId, role, message);
 				if (result === ALREADY_PRESENT) {
 					content = `${role} is already a color role in this server.`;
 				}
@@ -110,12 +139,12 @@ module.exports = {
 			}
 		}
 		else if (subcommandName === 'list') {
-			const roleIds = await getColorRolesIds(interaction.guildId);
-			if (roleIds === NO_ROLES) {
+			const roleStr = await getColorRolesStr(interaction);
+			if (roleStr === NO_ROLES) {
 				content = 'This server has no color roles. Try using `/manage-colors add` to add some!';
 			}
 			else {
-				content = `This server's color roles are:\n${roleIds.map(id => `<@&${id}>`).join('\n')}`;
+				content = `This server's color roles are:\n${roleStr}`;
 			}
 		}
 		return interaction.reply({ content });

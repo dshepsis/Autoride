@@ -82,19 +82,27 @@ async function removeAssociationsFromPrivilegeLevel({
 
 async function getPrivilegeLevelAssociationsString(guildId) {
 	const guildPrivilegeLevels = await privilegedRolesDB.get(guildId);
+	const tHead = '__**Associated Role - Privilege Level Name - Description**__';
+	let tBody;
 	if (guildPrivilegeLevels === undefined) {
-		return (privilegeLevels.byOrder
+		tBody = (privilegeLevels.byOrder
 			.map(p => `UNASSOCIATED - ${p.name} - ${p.description}`)
 			.join('\n')
 		);
 	}
-	return privilegeLevels.byOrder.map(p => {
-		const privilegedRoleId = guildPrivilegeLevels[p.name];
-		const roleStr = (privilegedRoleId === undefined)
-			? 'UNASSOCIATED'
-			: `<@&${privilegedRoleId}>`;
-		return `${roleStr} - ${p.name} - ${p.description}`;
-	}).join('\n');
+	else {
+		tBody = (privilegeLevels.byOrder
+			.map(p => {
+				const privilegedRoleId = guildPrivilegeLevels[p.name];
+				const roleStr = (privilegedRoleId === undefined)
+					? 'UNASSOCIATED'
+					: `<@&${privilegedRoleId}>`;
+				return `${roleStr} - ${p.name} - ${p.description}`;
+			})
+			.join('\n')
+		);
+	}
+	return `${tHead}\n${tBody}`;
 }
 
 async function getRoleIdAssociatedWithPrivilegeLevel({
