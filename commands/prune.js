@@ -1,6 +1,7 @@
-const { MessageActionRow, MessageButton } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
+
 const privilegeLevels = require('../privilegeLevels');
+const commandConfirmation = require('./command-util/awaitCommandConfirmation');
 
 const MAX_MESSAGES = 100;
 
@@ -21,47 +22,30 @@ module.exports = {
 	async execute(interaction) {
 		const amount = interaction.options.getInteger('amount');
 
+		// Prevent the user from selecting an incorrect number of commands
 		if (amount < 1 || amount > MAX_MESSAGES) {
 			const content = `You must choose a number of messages to delete between 1 and ${MAX_MESSAGES} (inclusive).`;
 			return interaction.reply({ content, ephemeral: true });
 		}
 
-		// Warn the user against deleting a lot of messages by accident:
-		const CUSTOM_ID = 'prune';
-		const row = new MessageActionRow().addComponents(new MessageButton()
-			.setCustomId(CUSTOM_ID)
-			.setLabel(`Yes, delete ${amount} messages.`)
-			.setStyle('DANGER'),
-		);
-		{
-			const content = `WARNING: You're about to delete the last ${amount} messages. This CANNOT be undone!`;
-			await interaction.reply({ content, components: [row], ephemeral: true });
-		}
-		const warningMessage = await interaction.fetchReply();
-
-		// Create the collector:
-		const filter = warningInteraction => (
-			warningInteraction.customId === CUSTOM_ID
-			&& warningInteraction.user.id === interaction.user.id
-		);
-		const IDLE_TIMEOUT = 30000; // milliseconds
-		let buttonInteraction;
-		try {
-			buttonInteraction = await warningMessage.awaitMessageComponent(
-				{ filter, componentType: 'BUTTON', time: IDLE_TIMEOUT }
-			);
-		}
-		catch (error) {
-			const content = `This \`/prune\` command timed out after ${
-				Math.floor(IDLE_TIMEOUT / 1000)
-			} seconds. Please dismiss this message and use the command again if needed.`;
-			return interaction.editReply({ content, components: [], ephemeral: true });
-		}
-		if (buttonInteraction.customId !== CUSTOM_ID) {
-			const content = 'You clicked an unexpected button!';
-			buttonInteraction.update({ content, components: [], ephemeral: true });
+		const {
+			responseType,
+			buttonInteraction,
+		} = await commandConfirmation.awaitCommandConfirmation({
+			interaction,
+			commandName: 'prune',
+			warningContent: `WARNING: You're about to delete the last ${amount} messages. This CANNOT be undone!`,
+			confirmContent: null,
+			confirmButtonLabel: `Yes, delete ${amount} messages.`,
+		});
+		if (responseType !== commandConfirmation.USER_CONFIRM) {
+			// If the user pressed the cancel button or let the confirmation dialog
+			// time out, just leave in-place the default replies of
+			// awaitCommandConfirmation.
+			return buttonInteraction;
 		}
 
+		// If the user confirmed they want to bulk delete messages:
 		try {
 			const messages = await interaction.channel.bulkDelete(amount, true);
 			const content = `Successfully deleted \`${messages.size}\` messages.`;

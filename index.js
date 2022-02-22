@@ -34,4 +34,31 @@ for (const file of eventFiles) {
 	}
 }
 
-client.login(token);
+(async () => {
+	await client.login(token);
+
+	// Get a list of routine modules from the /routines directory. These are
+	// basically scripts that run on a set frequency/schedule.
+	// See /routines/README.md for more info.
+	const routineFiles = (fs
+		.readdirSync('./routines')
+		.filter(file => file.endsWith('.js'))
+	);
+
+	// Initialize routines via setTimeout:
+	const timeoutIdsByFilename = Object.create(null);
+	const TEST_INSTANT_ROUTINE = true;
+	for (const file of routineFiles) {
+		const routine = require(`./routines/${file}`);
+
+		const loopTimeout = async () => {
+			console.log(`Running routine "${file}"`);
+			await routine.execute(client);
+			timeoutIdsByFilename[file] = setTimeout(loopTimeout, routine.interval_ms);
+		};
+		if (TEST_INSTANT_ROUTINE) {
+			loopTimeout();
+		}
+		timeoutIdsByFilename[file] = setTimeout(loopTimeout, routine.interval_ms);
+	}
+})();
