@@ -2,21 +2,7 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed } = require('discord.js');
 const { ChannelType } = require('discord-api-types/v9');
 const privilegeLevels = require('../privilegeLevels');
-
-const Keyv = require('keyv');
-
-// Load URL database. This is used to store URLs contained in the requested
-// message. These URLs are periodically checked by the
-// monitorURLsForHTTPErrors.js routine to see if any of them give HTTP errors.
-// If any of them do, notify the creator of the message.
-const urlsDB = new Keyv(
-	'sqlite://database.sqlite',
-	{ namespace: 'guildResources' }
-);
-urlsDB.on('error', err => console.log(
-	'Connection Error when searching for urlsDB',
-	err
-));
+const { addUrlObj } = require('../util/manageUrlsDB');
 
 module.exports = {
 	data: (new SlashCommandBuilder()
@@ -74,33 +60,38 @@ module.exports = {
 		);
 		const embedMsg = await channel.send({ embeds: [embed] });
 
-		// Check for URLs in the user's message, and ask to add them to the
-		// database of monitored URL's if there are any:
-		const urlObjs = [];
+		// Check for URLs in the user's message. Any URLs found are added to a
+		// database (via manageUrlsDB.js) which is periodically checked by
+		// routines/monitorURLsForHTTPErrors.js to see if they give errors when an
+		// HTTPS request is made to them. This helps users know when they need to
+		// edit their embed messages to fix broken links:
+		let anyUrls = false;
 		const urlRegex = /\[(?<mask>[^\]]+)\]\((?<maskedUrl>https[^)]+)\)|(?<url>https:\/\/\S+)/g;
-		console.log(`Checking for URL's in "${userContent}"`);
+		const urlAddPromises = [];
 		for (const match of userContent.matchAll(urlRegex)) {
+			anyUrls = true;
 			const groups = match.groups;
-			console.log('Found URL: ', groups);
+			const channelId = userReply.channelId;
+			const userId = userReply.author.id;
+			const info = groups.mask;
+			const url = (info) ? groups.maskedUrl : groups.url;
+
 			const urlObj = {
-				channelId: userReply.channelId,
-				userId: userReply.author.id,
+				url,
+				enabled: true,
+				notifyChannels: {
+					[channelId]: {
+						userIds: [userId],
+						info,
+					},
+				},
 			};
-			if (groups.mask) {
-				urlObj.url = groups.maskedUrl;
-				urlObj.info = groups.mask;
-			}
-			else {
-				urlObj.url = groups.url;
-			}
-			urlObjs.push(urlObj);
+			urlAddPromises.push(addUrlObj(interaction.guildId, urlObj));
 		}
 		let urlsMonitoredMsg = '';
-		if (urlObjs.length !== 0) {
-			// @TODO: Maybe there should be some additional metadata here, to support
-			// preventing multiple urlObjs having the same URL...
-			await urlsDB.set(interaction.guildId, urlObjs);
+		if (anyUrls) {
 			urlsMonitoredMsg = '\nAll URLs in the embed will be periodically checked for HTTP errors. You can manage this with the `/http-monitor` command.';
+			await Promise.all(urlAddPromises);
 		}
 		{
 			const content = `Reply sent to ${channel}: ${embedMsg.url}${urlsMonitoredMsg}`;

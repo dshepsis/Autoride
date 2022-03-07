@@ -7,6 +7,7 @@ module.exports = {
 	async fetchStatusCode(url) {
 		return new Promise((resolve, reject) => {
 			const request = https.get(url, response => {
+
 				resolve(response.statusCode);
 			});
 

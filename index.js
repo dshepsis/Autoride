@@ -54,6 +54,8 @@ for (const file of eventFiles) {
 		const loopTimeout = async () => {
 			console.log(`Running routine "${file}"`);
 			await routine.execute(client);
+			console.log(`Routine "${file}" completed.`);
+
 			timeoutIdsByFilename[file] = setTimeout(loopTimeout, routine.interval_ms);
 		};
 		if (TEST_INSTANT_ROUTINE) {
