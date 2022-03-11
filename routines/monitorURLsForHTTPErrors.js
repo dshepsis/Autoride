@@ -125,6 +125,7 @@ async function reportStatusCodesForGuild(client, guildId) {
 
 const MS_PER_MIN = 60 * 1000;
 module.exports = {
+	name: 'monitorURLsForHTTPErrors',
 	interval_ms: 5 * MS_PER_MIN, // 5 minutes
 	async execute(client) {
 		const guilds = client.guilds;

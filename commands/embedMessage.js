@@ -2,7 +2,7 @@ const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed } = require('discord.js');
 const { ChannelType } = require('discord-api-types/v9');
 const privilegeLevels = require('../privilegeLevels');
-const { addUrlObj } = require('../util/manageUrlsDB');
+const { addUrlObjs } = require('../util/manageUrlsDB');
 
 module.exports = {
 	data: (new SlashCommandBuilder()
@@ -67,7 +67,7 @@ module.exports = {
 		// edit their embed messages to fix broken links:
 		let anyUrls = false;
 		const urlRegex = /\[(?<mask>[^\]]+)\]\((?<maskedUrl>https[^)]+)\)|(?<url>https:\/\/\S+)/g;
-		const urlAddPromises = [];
+		const urlObjsToAdd = [];
 		for (const match of userContent.matchAll(urlRegex)) {
 			anyUrls = true;
 			const groups = match.groups;
@@ -86,12 +86,14 @@ module.exports = {
 					},
 				},
 			};
-			urlAddPromises.push(addUrlObj(interaction.guildId, urlObj));
+			urlObjsToAdd.push(urlObj);
 		}
 		let urlsMonitoredMsg = '';
 		if (anyUrls) {
 			urlsMonitoredMsg = '\nAll URLs in the embed will be periodically checked for HTTP errors. You can manage this with the `/http-monitor` command.';
-			await Promise.all(urlAddPromises);
+			console.log('updating urlObjs');
+			await addUrlObjs(interaction.guildId, urlObjsToAdd);
+			console.log('updating urlObjs 4');
 		}
 		{
 			const content = `Reply sent to ${channel}: ${embedMsg.url}${urlsMonitoredMsg}`;

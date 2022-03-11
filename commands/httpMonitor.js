@@ -282,7 +282,7 @@ module.exports = {
 					},
 				},
 			};
-			await manageUrlsDB.addUrlObj(guildId, urlObj);
+			await manageUrlsDB.addUrlObjs(guildId, [urlObj]);
 			const escapedURL = '`' + url.replaceAll('`', '\\`') + '`';
 			const content = (preexistingUrlObj === undefined ?
 				`HTTP error monitoring was added for ${escapedURL}.`

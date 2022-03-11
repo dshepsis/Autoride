@@ -64,65 +64,85 @@ async function getUrlObjByUrl(guildId, url) {
 	const urlObjs = await getUrlObjsForGuild(guildId);
 	const urlMap = new Map();
 	for (const urlObj of urlObjs) {
+		urlMap.set(3, 4);
 		urlMap.set(urlObj.url, urlObj);
 	}
 	guildIdToUrlMaps[guildId] = urlMap;
 	return urlMap.get(url);
 }
 
-// Adds a new urlObj for this guild, or merges the parameter obj with the
-// existing obj, updating the info and adding any new channels/users:
-async function addUrlObj(guildId, urlObj) {
-	const urlToAdd = urlObj.url;
-	const addNotifyObj = urlObj.notifyChannels;
-	const urlObjs = await getUrlObjsForGuild(guildId);
-
-	const currentUrlObj = await getUrlObjByUrl(guildId, urlToAdd);
-
-	// If the requested URL currently isn't being monitored in this guild,
-	// simply add it to the array, update the caches, and save the list.
-	if (currentUrlObj === undefined) {
-		// guildIdToUrlMaps is guaranteed to have guildId after getUrlObjByUrl:
-		guildIdToUrlMaps[guildId].set(urlToAdd, urlObj);
-
-		urlObjs.push(urlObj);
-		urlsDB.set(guildId, urlObjs);
-		return true;
+// Modifies the target urlObj to include information from the source urlObj.
+// This means that any channels in the notifyChannels object from the source
+// will be added to the target if not already present. Any userIds for any given
+// channel will be added if the channel is already present on the target. If
+// the source has a non-falsy info property for a given channel, it overwrites
+// the target's corresponding info property.
+function mergeUrlObj({ target, source } = {}) {
+	if (target.url !== source.url) {
+		throw new Error(`Cannot merge urlObjs with different URLs! Target has "${target.url}", while source has "${source.url}".`);
 	}
-
-	// If the requested URL is ALREADY being monitored, add the data from
-	// the parameter to the existing object, to preserve the invariant that each
-	// url only gets one urlObj per guild.
-	currentUrlObj.enabled = urlObj.enabled;
-	const currentNotifyObj = currentUrlObj.notifyChannels;
+	target.enabled = source.enabled;
+	const sourceNotify = source.notifyChannels;
+	const targetNotify = target.notifyChannels;
 
 	// For each channel to notify, add the users to that channel's object so
 	// they can be mentioned in that channel's message. Also overwrite that
 	// channel's object's info property:
-	for (const channelId in addNotifyObj) {
-		const addNotifyForChannel = addNotifyObj[channelId];
-		const currentNotifyForChannel = currentNotifyObj[channelId];
+	for (const channelId in sourceNotify) {
+		const sourceNotifyForChannel = sourceNotify[channelId];
+		const targetNotifyForChannel = targetNotify[channelId];
 
-		// If one of the channels from the added object isn't already being
-		// notified, add an entry in the notifyChannels object for that channel:
-		if (!(channelId in currentNotifyObj)) {
-			currentNotifyObj[channelId] = addNotifyForChannel;
+		// If one of the channels from the source object isn't already being
+		// notified, add an entry in the target's notifyChannels object for that
+		// channel:
+		if (!(channelId in targetNotify)) {
+			targetNotify[channelId] = sourceNotifyForChannel;
 			continue;
 		}
 		// If the channel is already being notified, add any new users to notify:
-		const currNotifyUserIdsSet = new Set(currentNotifyForChannel.userIds);
-		for (const userId of addNotifyForChannel.userIds) {
+		const currNotifyUserIdsSet = new Set(targetNotifyForChannel.userIds);
+		for (const userId of sourceNotifyForChannel.userIds) {
 			currNotifyUserIdsSet.add(userId);
 		}
-		currentNotifyForChannel.userIds = Array.from(currNotifyUserIdsSet);
+		targetNotifyForChannel.userIds = Array.from(currNotifyUserIdsSet);
 
 		// ... And, overwrite the previous info if there is a new one. Otherwise,
 		// leave it the same:
-		const newInfo = addNotifyForChannel.info;
+		const newInfo = sourceNotifyForChannel.info;
 		if (newInfo) {
-			currentNotifyForChannel.info = newInfo;
+			targetNotifyForChannel.info = newInfo;
 		}
 	}
+}
+
+// Adds a new urlObj for this guild, or merges the parameter obj with the
+// existing obj, updating the info and adding any new channels/users:
+// async function addUrlObj(guildId, urlObj) {
+async function addUrlObjs(guildId, urlObjs) {
+	console.log('updating urlObjs 1');
+
+	for (const urlObjToAdd of urlObjs) {
+		const urlToAdd = urlObjToAdd.url;
+		const currentUrlObj = await getUrlObjByUrl(guildId, urlToAdd);
+
+		// If the requested URL currently isn't being monitored in this guild,
+		// simply add it to the array, update the caches, and save the list.
+		if (currentUrlObj === undefined) {
+			// guildIdToUrlMaps is guaranteed to have guildId after getUrlObjByUrl:
+			guildIdToUrlMaps[guildId].set(urlToAdd, urlObjToAdd);
+
+			urlObjs.push(urlObjToAdd);
+			urlsDB.set(guildId, urlObjs);
+			continue;
+		}
+		// If the requested URL is ALREADY being monitored, add the data from
+		// the parameter to the existing object, to preserve the invariant that each
+		// url only gets one urlObj per guild.
+		mergeUrlObj({ target: currentUrlObj, source: urlObjToAdd });
+	}
+
+	console.log('updating urlObjs 2');
+	console.log(JSON.stringify(urlObjs, null, 2));
 	return urlsDB.set(guildId, urlObjs);
 }
 
@@ -209,7 +229,7 @@ module.exports = {
 	getUrlObjsForGuild,
 	getEnabledUrlObjsForGuild,
 	getUrlObjByUrl,
-	addUrlObj,
+	addUrlObjs,
 	setUrlEnabled,
 	setUrlsEnabled,
 	deleteUrlObj,
