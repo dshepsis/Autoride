@@ -1,5 +1,5 @@
-const { fetchStatusCode } = require('../util/fetchStatusCode');
-const { getEnabledUrlObjsForGuild, setUrlsEnabled } = require('../util/manageUrlsDB');
+import { fetchStatusCode } from '../util/fetchStatusCode.mjs';
+import { getEnabledUrlObjsForGuild, setUrlsEnabled } from '../util/manageUrlsDB.mjs';
 
 async function sendMessageToGuildChannel({
 	guild,
@@ -13,7 +13,7 @@ async function sendMessageToGuildChannel({
 // Check the status codes for all of the URLs stored in the DB for the given
 // guild. Then, if any of them are error codes, send a message to the
 // corresponding channel.
-async function reportStatusCodesForGuild(client, guildId) {
+export async function reportStatusCodesForGuild(client, guildId) {
 	const urlObjs = await getEnabledUrlObjsForGuild(guildId);
 	if (!urlObjs) {
 		return null;
@@ -124,23 +124,20 @@ async function reportStatusCodesForGuild(client, guildId) {
 }
 
 const MS_PER_MIN = 60 * 1000;
-module.exports = {
-	name: 'monitorURLsForHTTPErrors',
-	interval_ms: 5 * MS_PER_MIN, // 5 minutes
-	async execute(client) {
-		const guilds = client.guilds;
-		const reportPromises = [];
-		for (const guildId of guilds.cache.keys()) {
-			const thisGuildPromise = reportStatusCodesForGuild(client, guildId);
+export const name = 'monitorURLsForHTTPErrors';
+export const interval_ms = 5 * MS_PER_MIN; // 5 minutes
+export async function execute(client) {
+	const guilds = client.guilds;
+	const reportPromises = [];
+	for (const guildId of guilds.cache.keys()) {
+		const thisGuildPromise = reportStatusCodesForGuild(client, guildId);
 
-			// If this guild didn't have any URLs to monitor, or if none of them gave
-			// errors:
-			if (thisGuildPromise === null) {
-				continue;
-			}
-			reportPromises.push(thisGuildPromise);
+		// If this guild didn't have any URLs to monitor, or if none of them gave
+		// errors:
+		if (thisGuildPromise === null) {
+			continue;
 		}
-		return Promise.all(reportPromises);
-	},
-	reportStatusCodesForGuild,
-};
+		reportPromises.push(thisGuildPromise);
+	}
+	return Promise.all(reportPromises);
+}

@@ -1,13 +1,13 @@
-const { MessageActionRow, MessageButton } = require('discord.js');
+import { MessageActionRow, MessageButton } from 'discord.js';
 
 // User response codes:
-const USER_CANCEL = Symbol('User pressed the cancel button');
-const USER_CONFIRM = Symbol('User pressed the confirm button');
-const USER_TIMEOUT = Symbol('User did not interact with the confirm or cancel button within the time limit.');
+export const USER_CANCEL = Symbol('User pressed the cancel button');
+export const USER_CONFIRM = Symbol('User pressed the confirm button');
+export const USER_TIMEOUT = Symbol('User did not interact with the confirm or cancel button within the time limit.');
 
 // Provides a declarative way to give the user of a command a confirm/cancel
 // dialogue (using Action Row Buttons) before continuing to execute it:
-async function awaitCommandConfirmation({
+export async function awaitCommandConfirmation({
 	// The interaction object for the command which we're asking the user to confirm
 	interaction,
 	// The name of the command. Only used in message strings.
@@ -120,10 +120,3 @@ async function awaitCommandConfirmation({
 	// This should never execute?
 	throw new Error(`Unknown confirmation action for '${commandName}'!`);
 }
-
-module.exports = {
-	USER_CONFIRM,
-	USER_CANCEL,
-	USER_TIMEOUT,
-	awaitCommandConfirmation,
-};

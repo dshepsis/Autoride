@@ -9,7 +9,8 @@ const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_
 
 // Import each command module and save it to a collection
 client.commands = new Collection();
-const commands = await importDir(resolve('./commands/'));
+// const commands = await importDir(resolve('./commands/'));
+const commands = await importDir('./commands/');
 for (const command of commands) {
 	client.commands.set(command.data.name, command);
 }

@@ -6,19 +6,26 @@
 // to whitelist specific users and roles based on id. For this bot,
 // permissions are managed through a generic privilege system.
 //
-// privilegeLevels.js defines a series of generic privilege-levels.
-// These can be referenced in the .minimumPrivilege property in command .js
+// privilegeLevels.cjs defines a series of generic privilege-levels.
+// These can be referenced in the .minimumPrivilege property in command module
 // files. Then, in each server the bot operates in, the manage-privileges
 // command is used to assign each privilege level a role. For example,
 // the "MOD" priority level is assigned to the "borks" role in the
 // Okami speedrunning discord. These assignments are stored via keyv in the
 // privilegedRoles namespace of database.sqlite.
-const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v9');
-const { clientId, token, masterUserId } = require('./config.json');
+// const { REST } = require('@discordjs/rest');
+import { REST } from '@discordjs/rest';
+import { resolve } from 'node:path';
+import { importDir } from './util/importDir.mjs';
+import { Routes } from 'discord-api-types/v9';
+// const { Routes } = require('discord-api-types/v9');
+// import { clientId, token, masterUserId } from './config.json';
 
-const privilegeLevels = require('./privilegeLevels');
-const Keyv = require('keyv');
+import { importJSON } from './util/importJSON.mjs';
+const { clientId, token, masterUserId } = await importJSON(resolve('./config.json'));
+
+import * as privilegeLevels from './privilegeLevels.mjs';
+import Keyv from 'keyv';
 
 // Load configuration database. This will be used to find which privilege
 // privilege levels are associated with which roles in this guild
@@ -31,28 +38,27 @@ privilegedRolesDB.on('error', err => console.log(
 	err
 ));
 
-// This database contains the .minimumPrivilege properties for each command.
-// It's updated when deploy-command.js is run:
-const commandMetadataDB = new Keyv(
-	'sqlite://database.sqlite',
-	{ namespace: 'commandMetadata' }
-);
-commandMetadataDB.on('error', err => console.log(
-	'Connection Error when searching for commandMetadataDB',
-	err
-));
-
-async function deployPermissions({
+export async function deployPermissions({
 	// The id of the guild to which to apply the command permission overwrites:
 	guildId,
 	// An object with all the command names as keys, and their corresponding
 	// ids (snowflakes) as values:
 	commandNameToId,
 	// Allow recycling an existing REST connection (e.g. if called from
-	// deploy-commands.js):
+	// deploy-commands):
 	rest = new REST({ version: '9' }).setToken(token),
 } = {}) {
-	const commandNameToMinPrivs = await commandMetadataDB.get('minPrivileges');
+	// Import each command module and get the mininumPrivileges
+	const commandNameToMinPrivs = Object.create(null);
+	const commands = await importDir(resolve('./commands/'));
+	for (const command of commands) {
+		if (command.minimumPrivilege === undefined) {
+			continue;
+		}
+		commandNameToMinPrivs[command.data.name] = command.minimumPrivilege;
+	}
+
+	// const commandNameToMinPrivs = await commandMetadataDB.get('minPrivileges');
 
 	// If there are no commands which have setDefaultPermission(false), don't
 	// bother registering command permission overwrites:
@@ -122,5 +128,3 @@ async function deployPermissions({
 		{ body: fullPermissions },
 	);
 }
-
-module.exports = { deployPermissions };

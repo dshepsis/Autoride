@@ -1,5 +1,5 @@
-const { MessageActionRow, MessageSelectMenu } = require('discord.js');
-const { SlashCommandBuilder } = require('@discordjs/builders');
+import { MessageActionRow, MessageSelectMenu } from 'discord.js';
+import { SlashCommandBuilder } from '@discordjs/builders';
 
 async function getSelectableRoles({
 	roles,
@@ -22,9 +22,9 @@ async function getSelectableRoles({
 
 // The maximum number of options on a select menu permitted by Discord's API
 // See: https://discord.com/developers/docs/interactions/message-components#select-menu-object-select-menu-structure
-const MAX_PAGE_SIZE = 25;
+export const MAX_PAGE_SIZE = 25;
 
-function createRoleSelector({
+export function createRoleSelector({
 	// The name of the command and selector component
 	name,
 	// Command description
@@ -41,7 +41,7 @@ function createRoleSelector({
 	// default. False if it should be disabled for all users by default.
 	defaultPermission = true,
 	// Optional - What privilege-level the returned command should have if
-	// defaultPermission is false. See privilegeLevels.js.
+	// defaultPermission is false. See privilegeLevels.
 	minimumPrivilege,
 	// Optional - If true, the roles will be sorted based on the order they're
 	// listed in the server's role settings. If false, they will be in the order
@@ -177,19 +177,24 @@ function createRoleSelector({
 			// Otherwise, handle role selection:
 			const roleIdToAdd = selectInteraction.values[0];
 
-			const userRoles = selectInteraction.member.roles;
+			const userRolesManager = selectInteraction.member.roles;
+			const userRoles = userRolesManager.cache;
 			let content;
-			if (userRoles.cache.has(roleIdToAdd)) {
+			if (userRoles.has(roleIdToAdd)) {
 				content = `You already have the <@&${roleIdToAdd}> role!`;
 			}
 			else {
-				const rolesToRemove = [];
+				// Get all of a users current roles, then remove any existing roles in
+				// this selector, and add in the selected role. Then, use the
+				// GuildMemberRoleManager.set method to change the user's roles in a
+				// single Discord API request:
+				const setOfRoleIdsToSet = new Set(userRoles.keys());
 				for (const roleId in selectableRoles) {
 					if (roleIdToAdd === roleId) continue;
-					rolesToRemove.push(roleId);
+					setOfRoleIdsToSet.delete(roleId);
 				}
-				await userRoles.remove(rolesToRemove);
-				await userRoles.add(roleIdToAdd);
+				setOfRoleIdsToSet.add(roleIdToAdd);
+				await userRolesManager.set(Array.from(setOfRoleIdsToSet));
 				const customMessage = selectableRoles[roleIdToAdd].message;
 				content = customMessage ?? `You're now <@&${roleIdToAdd}>!`;
 			}
@@ -217,5 +222,3 @@ function createRoleSelector({
 		execute,
 	};
 }
-
-module.exports = { createRoleSelector, MAX_PAGE_SIZE };

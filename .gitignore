@@ -7,7 +7,7 @@ config.json
 # Test stuff:
 testDep/
 testFolder/
-keyvTest.js
+keyvTest.cjs
 fsTest.mjs
 
 # Logs

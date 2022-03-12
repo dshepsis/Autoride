@@ -1,31 +1,29 @@
-const fs = require('node:fs');
-const { REST } = require('@discordjs/rest');
-const { Routes } = require('discord-api-types/v9');
-const { clientId, guildId, token } = require('./config.json');
-const { deployPermissions } = require('./deploy-permissions');
+import { resolve } from 'node:path';
+import { importDir } from './util/importDir.mjs';
+import { REST } from '@discordjs/rest';
+import { Routes } from 'discord-api-types/v9';
+import { importJSON } from './util/importJSON.mjs';
+const { clientId, guildId, token } = await importJSON(resolve('./config.json'));
+import { deployPermissions } from './deploy-permissions.mjs';
 
-const Keyv = require('keyv');
+// import Keyv from 'keyv';
 
 // Used to store some extra command data which isn't sent to Discord, such as
 // the minimumPrivilege property for commands with permissions. This data is
-// then read in deploy-permissions.js.
-const commandMetadataDB = new Keyv('sqlite://database.sqlite', { namespace: 'commandMetadata' });
-commandMetadataDB.on('error', err => console.log('Connection Error when searching for commandMetadataDB', err));
+// then read in deploy-permissions.cjs.
+// const commandMetadataDB = new Keyv('sqlite://database.sqlite', { namespace: 'commandMetadata' });
+// commandMetadataDB.on('error', err => console.log('Connection Error when searching for commandMetadataDB', err));
 
 // An array of SlashCommandBuilder objects for every command:
 const commandData = [];
 
-const commandFileNames = (fs
-	.readdirSync('./commands')
-	.filter(file => file.endsWith('.js'))
-);
-
+const commands = await importDir(resolve('./commands/'));
+const commandNameToMinPrivs = Object.create(null);
 // For every js file in the commands folder, read its .data property. If it's
 // a command with setDefaultPermission(false), then also read its required
 // privileges:
-const commandNameToMinPrivs = Object.create(null);
-for (const file of commandFileNames) {
-	const command = require(`./commands/${file}`);
+for (const command of commands) {
+	// const command = require(`./commands/${file}`);
 	commandData.push(command.data.toJSON());
 
 	const usableByDefault = command.data.defaultPermission ?? true;
@@ -42,10 +40,10 @@ for (const file of commandFileNames) {
 	commandNameToMinPrivs[command.data.name] = minimumPrivilege;
 }
 // Queue up a task to update the metadata Keyv store:
-const updateMetadataPromise = commandMetadataDB.set(
-	'minPrivileges',
-	commandNameToMinPrivs
-);
+// const updateMetadataPromise = commandMetadataDB.set(
+// 	'minPrivileges',
+// 	commandNameToMinPrivs
+// );
 
 const rest = new REST({ version: '9' }).setToken(token);
 
@@ -64,7 +62,7 @@ const rest = new REST({ version: '9' }).setToken(token);
 			commandNameToId[command.name] = command.id;
 		}
 		// Make sure that the Keyv store has been updated:
-		await updateMetadataPromise;
+		// await updateMetadataPromise;
 		await deployPermissions({
 			guildId,
 			commandNameToId,

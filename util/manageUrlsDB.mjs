@@ -1,8 +1,8 @@
-const Keyv = require('keyv');
+import Keyv from 'keyv';
 
 // Load URL database. This is used to store URLs contained in the requested
 // message. These URLs are periodically checked by the
-// monitorURLsForHTTPErrors.js routine to see if any of them give HTTP errors.
+// monitorURLsForHTTPErrors routine to see if any of them give HTTP errors.
 // If any of them do, notify the creator of the message.
 const urlsDB = new Keyv(
 	'sqlite://database.sqlite',
@@ -21,7 +21,7 @@ const guildIdToUrlMaps = Object.create(null);
 
 // const urlObj = {
 // 	url: 'https://example.com', // Which URL to check
-//	enabled: true, // Whether this URL should be checked in monitorURLsForHTTPErrors.js
+//	enabled: true, // Whether this URL should be checked in monitorURLsForHTTPErrors
 // 	notifyChannels: { // Where to send notification messages
 // 		'931013295740166194': { // id of channel to send message to
 // 			userIds: ['263153040041836555', '163125227826446336'], // users to notify
@@ -34,7 +34,7 @@ const guildIdToUrlMaps = Object.create(null);
 // };
 
 // Returns an array of all url objects in the DB for the given guild id:
-async function getUrlObjsForGuild(guildId) {
+export async function getUrlObjsForGuild(guildId) {
 	if (guildId in guildIdToUrlObjs) {
 		return guildIdToUrlObjs[guildId];
 	}
@@ -50,14 +50,14 @@ async function getUrlObjsForGuild(guildId) {
 }
 
 // Returns an array of all enabled url objects in the DB for the given guild id:
-async function getEnabledUrlObjsForGuild(guildId) {
+export async function getEnabledUrlObjsForGuild(guildId) {
 	const urlObjs = await getUrlObjsForGuild(guildId);
 	return urlObjs.filter(o => o.enabled);
 }
 
 // Get a single url object, matching the given URL. For each guild, there is
 // only ever a single url object for any url.
-async function getUrlObjByUrl(guildId, url) {
+export async function getUrlObjByUrl(guildId, url) {
 	if (guildId in guildIdToUrlMaps) {
 		return guildIdToUrlMaps[guildId].get(url);
 	}
@@ -77,7 +77,7 @@ async function getUrlObjByUrl(guildId, url) {
 // channel will be added if the channel is already present on the target. If
 // the source has a non-falsy info property for a given channel, it overwrites
 // the target's corresponding info property.
-function mergeUrlObj({ target, source } = {}) {
+export function mergeUrlObj({ target, source } = {}) {
 	if (target.url !== source.url) {
 		throw new Error(`Cannot merge urlObjs with different URLs! Target has "${target.url}", while source has "${source.url}".`);
 	}
@@ -118,7 +118,7 @@ function mergeUrlObj({ target, source } = {}) {
 // Adds a new urlObj for this guild, or merges the parameter obj with the
 // existing obj, updating the info and adding any new channels/users:
 // async function addUrlObj(guildId, urlObj) {
-async function addUrlObjs(guildId, urlObjs) {
+export async function addUrlObjs(guildId, urlObjs) {
 	console.log('updating urlObjs 1');
 
 	for (const urlObjToAdd of urlObjs) {
@@ -148,7 +148,7 @@ async function addUrlObjs(guildId, urlObjs) {
 
 // Set the url object for the given url in the given guild to be either enabled
 // or disabled (enabled by default):
-async function setUrlEnabled({
+export async function setUrlEnabled({
 	guildId,
 	url,
 	enabled = true,
@@ -166,7 +166,7 @@ async function setUrlEnabled({
 // Get all of the url objects for the given guild, filter them using the given
 // filter function (if provided), and set the resulting array of urlObjs to be
 // either enabled or disabled (enabled by default).
-async function setUrlsEnabled({
+export async function setUrlsEnabled({
 	guildId,
 	urlObjFilterFun = null,
 	enabled = true,
@@ -185,7 +185,7 @@ async function setUrlsEnabled({
 }
 
 // Completely remove a URL from the list of monitored URLs in the given guild:
-async function deleteUrlObj(guildId, url) {
+export async function deleteUrlObj(guildId, url) {
 	const urlObjs = await getUrlObjsForGuild(guildId);
 
 	// Remove the urlObj for the given url from this guild's array of urlObjs:
@@ -211,7 +211,7 @@ async function deleteUrlObj(guildId, url) {
 // by the parameter. This is useful for making bulk changes to a urlObj by
 // first requesting it via getUrlObjsByUrl, and then passing a modified
 // version to this function:
-async function overwriteUrlObj(guildId, newUrlObj) {
+export async function overwriteUrlObj(guildId, newUrlObj) {
 	const overwritingUrl = newUrlObj.url;
 	const urlObjs = await getUrlObjsForGuild(guildId);
 
@@ -224,14 +224,3 @@ async function overwriteUrlObj(guildId, newUrlObj) {
 
 	guildIdToUrlMaps[guildId].set(overwritingUrl, newUrlObj);
 }
-
-module.exports = {
-	getUrlObjsForGuild,
-	getEnabledUrlObjsForGuild,
-	getUrlObjByUrl,
-	addUrlObjs,
-	setUrlEnabled,
-	setUrlsEnabled,
-	deleteUrlObj,
-	overwriteUrlObj,
-};

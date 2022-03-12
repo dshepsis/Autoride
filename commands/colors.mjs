@@ -1,5 +1,5 @@
-const { createRoleSelector } = require('./command-util/roleSelector.js');
-const Keyv = require('keyv');
+import { createRoleSelector } from './command-util/roleSelector.mjs';
+import Keyv from 'keyv';
 
 // Load configuration database. This will be used to find which color roles
 // the current server has:
@@ -8,7 +8,10 @@ const colorRolesDB = new Keyv(
 	{ namespace: 'colorRoles' }
 );
 
-module.exports = createRoleSelector({
+export const {
+	data,
+	execute,
+} = createRoleSelector({
 	name: 'colors',
 	description: 'Select your username color.',
 	async rolesFromInteraction(interaction) {

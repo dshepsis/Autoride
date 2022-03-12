@@ -2,7 +2,8 @@
   "name": "autoride",
   "version": "1.0.0",
   "description": "Discord JS Bot by Auride, mainly for use in the Okami Speedrunning Discord",
-  "main": "index.js",
+  "main": "index.mjs",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

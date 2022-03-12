@@ -1,12 +1,12 @@
 // User response codes:
-const USER_REPLY = Symbol('User replied to the bot.');
-const USER_TIMEOUT = Symbol('User did not reply within the time limit.');
-const USER_OVER_MAX_LENGTH = Symbol('User\'s reply exceeded the given maximum length.');
-const BOT_MESSAGE_DELETED = Symbol('The bot\'s message was deleted before the timeout.');
+export const USER_REPLY = Symbol('User replied to the bot.');
+export const USER_TIMEOUT = Symbol('User did not reply within the time limit.');
+export const USER_OVER_MAX_LENGTH = Symbol('User\'s reply exceeded the given maximum length.');
+export const BOT_MESSAGE_DELETED = Symbol('The bot\'s message was deleted before the timeout.');
 
 // Provides a declarative way to wait to request that a user to reply to the
 // the bot, then returns the contents of their reply.
-async function awaitCommandReply({
+export async function awaitCommandReply({
 	// The interaction object for the command which we're asking the user to reply
 	interaction,
 	// The name of the command. Only used in message strings.
@@ -80,11 +80,3 @@ async function awaitCommandReply({
 		}
 	}
 }
-
-module.exports = {
-	USER_REPLY,
-	USER_TIMEOUT,
-	USER_OVER_MAX_LENGTH,
-	BOT_MESSAGE_DELETED,
-	awaitCommandReply,
-};
