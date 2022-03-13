@@ -1,22 +1,24 @@
 import { Client, Collection, Intents } from 'discord.js';
-import { resolve } from 'node:path';
-import { importJSON } from './util/importJSON.mjs';
-const { token } = await importJSON(resolve('./config.json'));
 
 import { importDir } from './util/importDir.mjs';
+
+import { pkgRelPath } from './util/pkgRelPath.mjs';
+
+import { importJSON } from './util/importJSON.mjs';
+const { token } = await importJSON(pkgRelPath('./config.json'));
 
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
 
 // Import each command module and save it to a collection
 client.commands = new Collection();
 // const commands = await importDir(resolve('./commands/'));
-const commands = await importDir('./commands/');
+const commands = await importDir(pkgRelPath('./commands/'));
 for (const command of commands) {
 	client.commands.set(command.data.name, command);
 }
 
 // Get a list of event modules from the /events directory
-const events = await importDir(resolve('./events/'));
+const events = await importDir(pkgRelPath('./events/'));
 // Attach event listeners declared in each event module
 for (const event of events) {
 	if (event.once) {
@@ -35,7 +37,7 @@ await client.login(token);
 // Get a list of routine modules from the /routines directory. These are
 // basically scripts that run on a set frequency/schedule.
 // See /routines/README.md for more info.
-const routines = await importDir(resolve('./routines/'));
+const routines = await importDir(pkgRelPath('./routines/'));
 
 // Initialize routines via setTimeout:
 const timeoutIds = [];

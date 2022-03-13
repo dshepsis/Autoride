@@ -1,23 +1,19 @@
-import { resolve } from 'node:path';
 import { importDir } from './util/importDir.mjs';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
 import { importJSON } from './util/importJSON.mjs';
-const { clientId, guildId, token } = await importJSON(resolve('./config.json'));
-import { deployPermissions } from './deploy-permissions.mjs';
 
-// import Keyv from 'keyv';
+import { pkgRelPath } from './util/pkgRelPath.mjs';
 
-// Used to store some extra command data which isn't sent to Discord, such as
-// the minimumPrivilege property for commands with permissions. This data is
-// then read in deploy-permissions.cjs.
-// const commandMetadataDB = new Keyv('sqlite://database.sqlite', { namespace: 'commandMetadata' });
-// commandMetadataDB.on('error', err => console.log('Connection Error when searching for commandMetadataDB', err));
+const { clientId, guildId, token } = await importJSON(
+	pkgRelPath('./config.json')
+);
+import { deployPermissions } from './util/deploy-permissions.mjs';
 
 // An array of SlashCommandBuilder objects for every command:
 const commandData = [];
 
-const commands = await importDir(resolve('./commands/'));
+const commands = await importDir(pkgRelPath('./commands/'));
 const commandNameToMinPrivs = Object.create(null);
 // For every js file in the commands folder, read its .data property. If it's
 // a command with setDefaultPermission(false), then also read its required
@@ -39,11 +35,7 @@ for (const command of commands) {
 	}
 	commandNameToMinPrivs[command.data.name] = minimumPrivilege;
 }
-// Queue up a task to update the metadata Keyv store:
-// const updateMetadataPromise = commandMetadataDB.set(
-// 	'minPrivileges',
-// 	commandNameToMinPrivs
-// );
+
 
 const rest = new REST({ version: '9' }).setToken(token);
 

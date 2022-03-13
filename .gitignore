@@ -1,6 +1,9 @@
 # Config
 config.json
 
+# Per-guild config data:
+guild-config/
+
 # KeyV Sqlite data storage:
 *.sqlite
 

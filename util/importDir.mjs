@@ -9,9 +9,9 @@ const dirCache = new Map();
 // default export returned instead of the full Module Namespace Exotic Object.
 // If a .js file is actually a CommonJS file, Node will throw an error.
 export async function importDir(dirPath) {
-	// dirPath must be an absolute path in order for dynamic import() to succeed,
-	// so we use path.resolve here.
-	dirPath = nodePath.resolve(dirPath);
+	if (!nodePath.isAbsolute(dirPath)) {
+		throw new Error('Path of imported directory must be absolute. To fix this, use the util/pkgRelPath function.');
+	}
 
 	// Ensure that the path actually refers to a directory:
 	const stat = await lstat(dirPath);

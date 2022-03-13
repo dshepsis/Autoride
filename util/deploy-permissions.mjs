@@ -15,16 +15,15 @@
 // privilegedRoles namespace of database.sqlite.
 // const { REST } = require('@discordjs/rest');
 import { REST } from '@discordjs/rest';
-import { resolve } from 'node:path';
-import { importDir } from './util/importDir.mjs';
 import { Routes } from 'discord-api-types/v9';
-// const { Routes } = require('discord-api-types/v9');
-// import { clientId, token, masterUserId } from './config.json';
 
-import { importJSON } from './util/importJSON.mjs';
-const { clientId, token, masterUserId } = await importJSON(resolve('./config.json'));
+import { pkgRelPath } from './pkgRelPath.mjs';
+import { importDir } from './importDir.mjs';
 
-import * as privilegeLevels from './privilegeLevels.mjs';
+import { importJSON } from './importJSON.mjs';
+const { clientId, token, masterUserId } = await importJSON(pkgRelPath('./config.json'));
+
+import * as privilegeLevels from '../privilegeLevels.mjs';
 import Keyv from 'keyv';
 
 // Load configuration database. This will be used to find which privilege
@@ -50,7 +49,7 @@ export async function deployPermissions({
 } = {}) {
 	// Import each command module and get the mininumPrivileges
 	const commandNameToMinPrivs = Object.create(null);
-	const commands = await importDir(resolve('./commands/'));
+	const commands = await importDir(pkgRelPath('./commands/'));
 	for (const command of commands) {
 		if (command.minimumPrivilege === undefined) {
 			continue;

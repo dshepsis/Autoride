@@ -21,7 +21,7 @@ async function associateRoleWithPrivilegeLevel({
 	privilegeLevelName,
 } = {}) {
 	if (deployPermissions === undefined) {
-		deployPermissions = await import('../deploy-permissions.mjs');
+		deployPermissions = await import('../util/deploy-permissions.mjs');
 	}
 	const guildId = guild.id;
 	const guildPrivilegeLevels = await privilegedRolesDB.get(guildId);
