@@ -1,17 +1,18 @@
-import Keyv from 'keyv';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { byOrder, asChoices, MASTER_USER_ONLY } from '../privilegeLevels.mjs';
 
-// Load configuration database. This will be used to find which privilege
-// privilege levels are associated with which roles in this guild
-const privilegedRolesDB = new Keyv(
-	'sqlite://database.sqlite',
-	{ namespace: 'privilegedRoles' }
-);
-privilegedRolesDB.on('error', err => console.log(
-	'Connection Error when searching for privilegedRolesDB',
-	err
-));
+import * as guildConfig from '../util/guildConfig.mjs';
+/** Load privileged roles data from guild-config directory */
+async function getPrivilegedRoles(guildId) {
+	return guildConfig.get(
+		guildId,
+		'privilegedRoles'
+	);
+}
+/** Write privileged roles data to guild-config directory */
+async function setPrivilegedRoles(guildId, guildPrivilegeLevels) {
+	return guildConfig.set(guildId, 'privilegedRoles', guildPrivilegeLevels);
+}
 
 let deployPermissions;
 const ALREADY_ASSOCIATED = Symbol('This role is already associated with this privilege level in this guild.');
@@ -24,18 +25,18 @@ async function associateRoleWithPrivilegeLevel({
 		deployPermissions = await import('../util/deploy-permissions.mjs');
 	}
 	const guildId = guild.id;
-	const guildPrivilegeLevels = await privilegedRolesDB.get(guildId);
+	const guildPrivilegeLevels = await getPrivilegedRoles(guildId);
 	if (guildPrivilegeLevels === undefined) {
-		return privilegedRolesDB.set(guildId, { [privilegeLevelName]: role.id });
+		return setPrivilegedRoles(guildId, { [privilegeLevelName]: role.id });
 	}
 	if (privilegeLevelName in guildPrivilegeLevels) {
 		return ALREADY_ASSOCIATED;
 	}
 	guildPrivilegeLevels[privilegeLevelName] = role.id;
 
-	// Make sure to wait for the DB to be updated before attempting to deploy
+	// Make sure to wait for the file to be updated before attempting to deploy
 	// the updated permissions:
-	await privilegedRolesDB.set(guildId, guildPrivilegeLevels);
+	await setPrivilegedRoles(guildId, guildPrivilegeLevels);
 
 	// Get command id mapping from guild data:
 	const commandNameToId = Object.create(null);
@@ -57,7 +58,7 @@ async function removeAssociationsFromPrivilegeLevel({
 	privilegeLevelName,
 } = {}) {
 	const guildId = guild.id;
-	const guildPrivilegeLevels = await privilegedRolesDB.get(guildId);
+	const guildPrivilegeLevels = await getPrivilegedRoles(guildId);
 	if (guildPrivilegeLevels === undefined) {
 		return NO_PRIVILEGES;
 	}
@@ -68,7 +69,8 @@ async function removeAssociationsFromPrivilegeLevel({
 
 	// Make sure to wait for the DB to be updated before attempting to deploy
 	// the updated permissions:
-	await privilegedRolesDB.set(guildId, guildPrivilegeLevels);
+	await guildConfig.set(guildId, 'privilegedRoles', guildPrivilegeLevels);
+	await setPrivilegedRoles(guildId, guildPrivilegeLevels);
 
 	// Get command id mapping from guild data:
 	const commandNameToId = Object.create(null);
@@ -84,7 +86,7 @@ async function removeAssociationsFromPrivilegeLevel({
 }
 
 async function getPrivilegeLevelAssociationsString(guildId) {
-	const guildPrivilegeLevels = await privilegedRolesDB.get(guildId);
+	const guildPrivilegeLevels = await getPrivilegedRoles(guildId);
 	const tHead = '__**Associated Role - Privilege Level Name - Description**__';
 	let tBody;
 	if (guildPrivilegeLevels === undefined) {
@@ -112,7 +114,7 @@ async function getRoleIdAssociatedWithPrivilegeLevel({
 	guild,
 	privilegeLevelName,
 } = {}) {
-	const guildPrivilegeLevels = await privilegedRolesDB.get(guild.id);
+	const guildPrivilegeLevels = await getPrivilegedRoles(guild.id);
 	return guildPrivilegeLevels[privilegeLevelName];
 }
 

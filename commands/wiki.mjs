@@ -26,13 +26,12 @@ export async function execute(interaction) {
 		response = (await fetchJSON(queryURL)).query.search[0];
 	}
 	catch (e) {
-		console.log(e);
+		console.error(e);
 		const content = 'Oops! Looks like the wiki\'s API is down! Try checking the wiki directly: https://okami.speedruns.wiki/';
 		return interaction.reply({ content });
 	}
 	if (response === undefined) {
 		// If no matching pages are found, direct the user to the wiki's search page:
-		// @TODO WARNING: This code may still be affected by this bug: https://github.com/discordjs/discord.js/issues/7373
 		const escapedQuery = Util.escapeMarkdown(query).replaceAll('`', '\\`');
 		const content = `Didn't find any pages with titles matching "${escapedQuery}".\nTry this wiki search link instead: https://okami.speedruns.wiki/index.php?search=${encodeURIComponent(query)}`;
 		return interaction.reply({ content });

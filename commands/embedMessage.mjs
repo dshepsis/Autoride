@@ -2,7 +2,10 @@ import { SlashCommandBuilder } from '@discordjs/builders';
 import { MessageEmbed } from 'discord.js';
 import { ChannelType } from 'discord-api-types/v9';
 import { byName } from '../privilegeLevels.mjs';
-import { addUrlObjs } from '../util/manageUrlsDB.mjs';
+import { addUrlObjs } from '../util/manageMonitoredURLs.mjs';
+import { awaitCommandReply, USER_REPLY } from './command-util/awaitCommandReply.mjs';
+import { awaitCommandConfirmation, USER_CONFIRM } from './command-util/awaitCommandConfirmation.mjs';
+
 
 export const data = (new SlashCommandBuilder()
 	.setName('embed-message')
@@ -19,36 +22,15 @@ export async function execute(interaction) {
 	const channel = (
 		interaction.options.getChannel('channel') ?? interaction.channel
 	);
-	{
-		const content = `Please reply to this message with the contents you want to embed in ${channel}.`;
-		await interaction.reply({ content });
-	}
 
-	const botMessage = await interaction.fetchReply();
-	const REPLY_TIME_LIMIT = 30000; // milliseconds
-	const filter = message => (
-		(botMessage.id === message?.reference?.messageId)
-		&& (interaction.user.id === message?.author.id)
-	);
-	let userReply;
-	try {
-		const collected = await interaction.channel.awaitMessages({
-			filter,
-			max: 1,
-			time: REPLY_TIME_LIMIT,
-			errors: ['time'],
-		});
-		userReply = collected.first();
-	}
-	catch (error) {
-		const content = `This \`/embed-message\` command timed out after ${Math.floor(REPLY_TIME_LIMIT / 1000)} seconds. Please dismiss this message and use the command again if needed.`;
-		try {
-			// This may error if the bot's reply was deleted:
-			return interaction.editReply({ content });
-		}
-		catch (editError) {
-			return null;
-		}
+	const { responseType, userReply } = await awaitCommandReply({
+		interaction,
+		commandName: 'embed-message',
+		timeout_ms: 30_000,
+		requestReplyContent: `Please reply to this message with the contents you want to embed in ${channel}.`,
+	});
+	if (responseType !== USER_REPLY) {
+		return;
 	}
 
 	const userContent = userReply.content;
@@ -63,7 +45,7 @@ export async function execute(interaction) {
 	// HTTPS request is made to them. This helps users know when they need to
 	// edit their embed messages to fix broken links:
 	let anyUrls = false;
-	const urlRegex = /\[(?<mask>[^\]]+)\]\((?<maskedUrl>https[^)]+)\)|(?<url>https:\/\/\S+)/g;
+	const urlRegex = /\[(?<mask>[^\]]+)\]\((?<maskedUrl>https?[^)]+)\)|(?<url>https?:\/\/\S+)/g;
 	const urlObjsToAdd = [];
 	for (const match of userContent.matchAll(urlRegex)) {
 		anyUrls = true;
@@ -85,15 +67,32 @@ export async function execute(interaction) {
 		};
 		urlObjsToAdd.push(urlObj);
 	}
-	let urlsMonitoredMsg = '';
-	if (anyUrls) {
-		urlsMonitoredMsg = '\nAll URLs in the embed will be periodically checked for HTTP errors. You can manage this with the `/http-monitor` command.';
-		console.log('updating urlObjs');
-		await addUrlObjs(interaction.guildId, urlObjsToAdd);
-		console.log('updating urlObjs 4');
-	}
-	{
-		const content = `Reply sent to ${channel}: ${embedMsg.url}${urlsMonitoredMsg}`;
+	if (!anyUrls) {
+		const content = `Reply sent to ${channel}: <${embedMsg.url}>`;
 		return userReply.reply({ content });
 	}
+	// If there were any URLs in the message we just embeded, ask the user if they
+	// want to monitor these URLs.
+	const {
+		responseType: buttonResponseType,
+		buttonInteraction,
+	} = await awaitCommandConfirmation({
+		interaction,
+		messageToReplyTo: userReply,
+		commandName: 'embed-message',
+		warningContent: `Reply sent to ${channel}: <${embedMsg.url}>.\nSome URL's were found in the message. Do you want to add them to the list of URLs monitored for HTTP errors? You can manage these using the \`/http-monitor\` command. If they're already being monitored, the existing entries will be updated to notify you in this channel.`,
+		buttonStyle: 'PRIMARY',
+		confirmContent: null,
+		confirmButtonLabel: 'Yes, monitor the URLs in my message.',
+		cancelButtonLabel: 'No, don\'t add URL monitoring.',
+	});
+	if (buttonResponseType !== USER_CONFIRM) {
+		// If the user pressed the cancel button or let the confirmation dialog
+		// time out, just leave in-place the default replies of
+		// awaitCommandConfirmation.
+		return buttonInteraction;
+	}
+	await addUrlObjs(interaction.guildId, urlObjsToAdd);
+	const content = 'All URLs in the embed will be periodically checked for HTTP errors. You can manage this with the `/http-monitor` command.';
+	return buttonInteraction.update({ content, components: [] });
 }

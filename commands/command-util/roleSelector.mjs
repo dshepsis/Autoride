@@ -198,14 +198,11 @@ export function createRoleSelector({
 				// GuildMemberRoleManager.set method to change the user's roles in a
 				// single Discord API request:
 				const setOfRoleIdsToSet = new Set(userRoles.keys());
-				console.log('user currently has roles: ', Array.from(setOfRoleIdsToSet));
 				for (const roleId in selectableRoles) {
 					if (roleIdToAdd === roleId) continue;
-					console.log('going to remove role: ', roleId);
 					setOfRoleIdsToSet.delete(roleId);
 				}
 				setOfRoleIdsToSet.add(roleIdToAdd);
-				console.log('going to set roles: ', Array.from(setOfRoleIdsToSet));
 				await userRolesManager.set(Array.from(setOfRoleIdsToSet));
 				const customMessage = selectableRoles[roleIdToAdd].message;
 				content = customMessage ?? `You're now <@&${roleIdToAdd}>!`;

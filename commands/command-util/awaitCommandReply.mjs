@@ -24,9 +24,9 @@ export async function awaitCommandReply({
 	// making one using requestReplyContent.
 	useMessage,
 	// Optional. The maximum number of characters allowed for the user's reply.
-	// If it's too long, an error message is presented to the user. +Infinity by
-	// default (i.e. no character limit).
-	maxLength = Infinity,
+	// If it's too long, an error message is presented to the user. 2000 by
+	// default.
+	maxLength = 2000,
 	// Optional
 	overMaxLengthContent = `Your message exceeded the maximum response length of ${maxLength} characters. Please try this '${commandName}' command again.`,
 } = {}) {
@@ -57,9 +57,10 @@ export async function awaitCommandReply({
 				botMessage,
 			};
 		}
+		// Successfully collected a valid user reply:
 		return {
 			responseType: USER_REPLY,
-			userReply: collected.first(),
+			userReply,
 			botMessage,
 		};
 	}

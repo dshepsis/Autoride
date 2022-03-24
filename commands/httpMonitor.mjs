@@ -4,7 +4,11 @@
 
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { byName } from '../privilegeLevels.mjs';
-import { setUrlEnabled, setUrlsEnabled, getUrlObjByUrl, getUrlObjsForGuild, addUrlObjs, deleteUrlObj, overwriteUrlObj } from '../util/manageUrlsDB.mjs';
+import * as manageUrls from '../util/manageMonitoredURLs.mjs';
+import { getReportStr } from '../routines/monitorURLsForHTTPErrors.mjs';
+import { splitMessageRegex } from '../util/splitMessageRegex.mjs';
+import { Replyable } from './command-util/Replyable.mjs';
+import { paginatedReply } from './command-util/paginatedReply.mjs';
 
 // Used as choices for the re-enable and disable subcommands
 const scopeChoices = [
@@ -25,7 +29,9 @@ const degreeChoices = [
 // For an array of urlObjs, returns a human readable message describing all of
 // them. The guild object is required to determine the tags corresponding to
 // the userIds in each urlObj
-async function urlObjsToHumanReadableStr(urlObjs, guild) {
+async function urlObjsToHumanReadableStr(urlObjs, guild, {
+	verbose = true,
+} = {}) {
 	// Get all of the user objects for all of the userIds for all of the urlObjs,
 	// which are used in building the messages:
 	const userIdSet = new Set();
@@ -43,18 +49,27 @@ async function urlObjsToHumanReadableStr(urlObjs, guild) {
 	// Turn each url object into a human-readable message:
 	for (const urlObj of urlObjs) {
 		const escapedURL = '`' + urlObj.url.replaceAll('`', '\\`') + '`';
-		const strLines = [`• URL ${escapedURL}${urlObj.enabled ? '' : ' (disabled)'}, is being monitored in the following channels:`];
+		const objHeader = (verbose ?
+			`• URL ${escapedURL}${urlObj.enabled ? '' : ' (disabled)'}, is being monitored in the following channels:`
+			: `• ${escapedURL}${urlObj.enabled ? '' : '(disabled)'}`
+		);
+		const strLines = [objHeader];
 		const notifyChannels = urlObj.notifyChannels;
 		for (const channelId in notifyChannels) {
 			const notifyObj = notifyChannels[channelId];
 			const userTags = notifyObj.userIds.map(userId =>
 				memberMap.get(userId).user.tag
 			);
-			strLines.push(`    • <#${channelId}>${('info' in notifyObj) ? `, with note "${notifyObj.info}"` : ''}, with the following users being notified: ${userTags.join(', ')}`);
+			const line = (verbose ?
+				`└── <#${channelId}>${(notifyObj.info) ? `, with note "${notifyObj.info}"` : ''}, with the following users being notified: ${userTags.join(', ')}`
+				: `└── <#${channelId}>${(notifyObj.info) ? `"${notifyObj.info}"` : ''}: ${userTags.join(', ')}`
+			);
+			strLines.push(line);
 		}
 		infoStrings.push(strLines.join('\n'));
 	}
-	return infoStrings.join('\n\n');
+	const infoSep = verbose ? '\n\n' : '\n';
+	return infoStrings.join(infoSep);
 }
 
 export const data = (new SlashCommandBuilder()
@@ -99,7 +114,25 @@ export const data = (new SlashCommandBuilder()
 		)
 		.addStringOption(option => option
 			.setName('url')
-			.setDescription('Which URL to disable (only checked if scope is SINGLE URL)')
+			.setDescription('Which URL to list (only checked if scope is SINGLE URL)')
+		)
+	)
+	.addSubcommand(subcommand => subcommand
+		.setName('test')
+		.setDescription('Immediately test a group of URLs currently being monitored for errors')
+		.addStringOption(option => option
+			.setName('scope')
+			.setDescription('Which group of URLs to test')
+			.setChoices(scopeChoices)
+			.setRequired(true)
+		)
+		.addBooleanOption(option => option
+			.setName('errors-only')
+			.setDescription('If true, report only URLs which result in an error. Else, include all results.')
+		)
+		.addStringOption(option => option
+			.setName('url')
+			.setDescription('Which URL to test (only checked if scope is SINGLE URL)')
 		)
 	)
 	.addSubcommand(subcommand => subcommand
@@ -170,7 +203,7 @@ export async function execute(interaction) {
 				const content = 'You must specify a URL to re-enable monitoring for!';
 				return interaction.reply({ content });
 			}
-			const urlObj = await setUrlEnabled({ guildId, url });
+			const urlObj = await manageUrls.setUrlEnabled({ guildId, url });
 
 			const escapedURL = '`' + url.replaceAll('`', '\\`') + '`';
 			const content = ((urlObj === undefined) ?
@@ -185,7 +218,7 @@ export async function execute(interaction) {
 			const content = `Unrecognized scope "${scope}"!`;
 			return interaction.reply({ content });
 		}
-		await setUrlsEnabled({
+		await manageUrls.setUrlsEnabled({
 			guildId,
 			urlObjFilterFun,
 		});
@@ -202,7 +235,7 @@ export async function execute(interaction) {
 				const content = 'You must specify a URL to disable monitoring for!';
 				return interaction.reply({ content });
 			}
-			const urlObj = await setUrlEnabled({
+			const urlObj = await manageUrls.setUrlEnabled({
 				guildId,
 				url,
 				enabled: false,
@@ -220,7 +253,7 @@ export async function execute(interaction) {
 			const content = `Unrecognized scope "${scope}"!`;
 			return interaction.reply({ content });
 		}
-		await setUrlsEnabled({
+		await manageUrls.setUrlsEnabled({
 			guildId,
 			urlObjFilterFun,
 			enabled: false,
@@ -237,7 +270,7 @@ export async function execute(interaction) {
 				const content = 'You must specify a URL to list information for!';
 				return interaction.reply({ content });
 			}
-			const urlObj = await getUrlObjByUrl(guildId, url);
+			const urlObj = await manageUrls.getUrlObjByUrl(guildId, url);
 			const escapedURL = '`' + url.replaceAll('`', '\\`') + '`';
 			const content = ((urlObj === undefined) ?
 				`The given url ${escapedURL} is not being monitored.`
@@ -251,20 +284,90 @@ export async function execute(interaction) {
 			const content = `Unrecognized scope "${scope}"!`;
 			return interaction.reply({ content });
 		}
-		const allUrlObjs = await getUrlObjsForGuild(guildId);
+		const allUrlObjs = await manageUrls.getUrlObjsForGuild(guildId);
 		const filteredUrlObjs = (urlObjFilterFun === null ?
 			allUrlObjs
 			: allUrlObjs.filter(urlObjFilterFun)
 		);
-		const content = ((filteredUrlObjs.length === 0) ?
+		const numObjs = filteredUrlObjs.length;
+		const content = ((numObjs === 0) ?
 			`No URLs are being currently monitored under the scope "${scope}".`
-			: await urlObjsToHumanReadableStr(filteredUrlObjs, guild)
+			: await urlObjsToHumanReadableStr(
+				filteredUrlObjs,
+				guild,
+				{ verbose: false }// numObjs <= 5 }
+			)
 		);
-		return interaction.reply({ content });
+
+		// For broader scopes (especially ALL), the resulting response is likely to
+		// exceed the character limit, so we use splitMessageRegex. This is my
+		// replacement for discord.js.util#splitMessage while it is affected by
+		// https://github.com/discordjs/discord.js/issues/7674
+		const contents = splitMessageRegex(content, { regex: /\n+(?! {4})/g });
+		return paginatedReply({
+			contents,
+			replyable: new Replyable({ interaction }),
+		});
+		// const splitContent = splitMessageRegex(content, { regex: /\n+(?! {4})/g });
+		// await interaction.reply({ content: splitContent[0] });
+		// for (let i = 1, len = splitContent.length; i < len; ++i) {
+		// 	await interaction.followUp({ content: splitContent[i] });
+		// }
+		// return;
 	}
+	if (subcommandName === 'test') {
+		const scope = interaction.options.getString('scope');
+		const errorsOnly = interaction.options.getBoolean('errors-only') ?? true;
+		let urlObjsToTest;
+		if (scope === 'SINGLE URL') {
+			const url = interaction.options.getString('url');
+			if (url === null) {
+				const content = 'You must specify a URL to test!';
+				return interaction.reply({ content });
+			}
+			// The getReportStr function accepts plain URL strings as well as urlObjs.
+			// This means we can easily test a URL even if it isn't actually being
+			// monitored.
+			urlObjsToTest = [url];
+		}
+		else {
+			// If we're testing a group of URLs:
+			const urlObjFilterFun = filterFuns[scope];
+			if (urlObjFilterFun === undefined) {
+				const content = `Unrecognized scope "${scope}"!`;
+				return interaction.reply({ content });
+			}
+			const allUrlObjs = await manageUrls.getUrlObjsForGuild(guildId);
+			urlObjsToTest = (urlObjFilterFun === null ?
+				allUrlObjs
+				: allUrlObjs.filter(urlObjFilterFun)
+			);
+		}
+		if (urlObjsToTest.length === 0) {
+			const content = `No URLs are being currently monitored under the scope "${scope}".`;
+			return interaction.reply({ content });
+		}
+		// Making a lot of HTTPS requests can actually take a long time, so we use
+		// deferReply to give us up to 15 minutes to finish:
+		await interaction.deferReply({ ephemeral: false });
+		const content = await getReportStr(urlObjsToTest, { errorsOnly });
+
+		// For broader scopes (especially ALL), the resulting response is likely to
+		// exceed the character limit, so we use discord.js.util#splitMessage
+		// and interaction.followUp to send multiple messages:
+		const splitContent = splitMessageRegex(content, { regex: /\n+(?! {4})/g });
+
+		// Because deferReply was used, editReply has to be used here:
+		await interaction.editReply({ content: splitContent[0], ephemeral: false });
+		for (let i = 1, len = splitContent.length; i < len; ++i) {
+			await interaction.followUp({ content: splitContent[i] });
+		}
+		return;
+	}
+
 	if (subcommandName === 'add') {
 		const url = interaction.options.getString('url');
-		const preexistingUrlObj = await getUrlObjByUrl(guildId, url);
+		const preexistingUrlObj = await manageUrls.getUrlObjByUrl(guildId, url);
 
 		const info = interaction.options.getString('info');
 		const channelIdToNotify = (
@@ -281,7 +384,7 @@ export async function execute(interaction) {
 				},
 			},
 		};
-		await addUrlObjs(guildId, [urlObj]);
+		await manageUrls.addUrlObjs(guildId, [urlObj]);
 		const escapedURL = '`' + url.replaceAll('`', '\\`') + '`';
 		const content = (preexistingUrlObj === undefined ?
 			`HTTP error monitoring was added for ${escapedURL}.`
@@ -294,12 +397,8 @@ export async function execute(interaction) {
 		const escapedURL = '`' + url.replaceAll('`', '\\`') + '`';
 		const degree = interaction.options.getString('degree');
 
-		// 'FOR ME IN THIS CHANNEL',
-		// 'FOR ME IN ALL CHANNELS',
-		// 'FOR THIS CHANNEL',
-		// 'REMOVE COMPLETELY',
 		if (degree === 'REMOVE COMPLETELY') {
-			const deleted = await deleteUrlObj(guildId, url);
+			const deleted = await manageUrls.deleteUrlObj(guildId, url);
 			const content = (deleted ?
 				`The URL ${escapedURL} is no longer being monitored.`
 				: `The URL ${escapedURL} was already not being monitored. No changes have been made.`
@@ -309,7 +408,7 @@ export async function execute(interaction) {
 
 		// If one of the other degrees are used, first request the existing urlObj
 		// for the given url, then modify it and pass it back to manageUrlsDB:
-		const currentUrlObj = await getUrlObjByUrl(guildId, url);
+		const currentUrlObj = await manageUrls.getUrlObjByUrl(guildId, url);
 		const notifyChannels = currentUrlObj.notifyChannels;
 		if (currentUrlObj === undefined) {
 			const content = `The URL ${escapedURL} was already not being monitored. No changes have been made.`;
@@ -333,7 +432,7 @@ export async function execute(interaction) {
 			else {
 				userIds.splice(index, 1);
 			}
-			await overwriteUrlObj(guildId, currentUrlObj);
+			await manageUrls.overwriteUrlObj(guildId, currentUrlObj);
 			const content = `You will no longer be notified of errors for the URL ${escapedURL} in this channel.`;
 			return interaction.reply({ content });
 		}
@@ -362,7 +461,7 @@ export async function execute(interaction) {
 				const content = `You were already not being notified for errors for the URL ${escapedURL} in any channels. No changes have been made.`;
 				return interaction.reply({ content });
 			}
-			await overwriteUrlObj(guildId, currentUrlObj);
+			await manageUrls.overwriteUrlObj(guildId, currentUrlObj);
 			const content = `You will no longer be notified of errors for the URL ${escapedURL} in any channel.`;
 			return interaction.reply({ content });
 		}
@@ -373,10 +472,9 @@ export async function execute(interaction) {
 				return interaction.reply({ content });
 			}
 			delete notifyChannels[channelId];
-			await overwriteUrlObj(guildId, currentUrlObj);
+			await manageUrls.overwriteUrlObj(guildId, currentUrlObj);
 			const content = `Notifications for errors for the URL ${escapedURL} will no longer be posted in this channel.`;
 			return interaction.reply({ content });
-
 		}
 	}
 	const content = `Unrecognized sub-command "${subcommandName}".`;

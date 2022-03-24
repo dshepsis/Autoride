@@ -9,6 +9,7 @@
 		"ecmaVersion": 2022
 	},
 	"rules": {
+		"no-constant-condition": ["error", { "checkLoops": false }],
 		"arrow-spacing": ["warn", { "before": true, "after": true }],
 		"brace-style": ["error", "stroustrup", { "allowSingleLine": true }],
 		"comma-dangle": ["error", {

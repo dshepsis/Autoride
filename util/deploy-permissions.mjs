@@ -11,9 +11,8 @@
 // files. Then, in each server the bot operates in, the manage-privileges
 // command is used to assign each privilege level a role. For example,
 // the "MOD" priority level is assigned to the "borks" role in the
-// Okami speedrunning discord. These assignments are stored via keyv in the
-// privilegedRoles namespace of database.sqlite.
-// const { REST } = require('@discordjs/rest');
+// Okami speedrunning discord. These assignments are stored in the corresponding
+// guild-config directory in privilegedRoles.json
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
 
@@ -24,18 +23,14 @@ import { importJSON } from './importJSON.mjs';
 const { clientId, token, masterUserId } = await importJSON(pkgRelPath('./config.json'));
 
 import * as privilegeLevels from '../privilegeLevels.mjs';
-import Keyv from 'keyv';
-
-// Load configuration database. This will be used to find which privilege
-// privilege levels are associated with which roles in this guild
-const privilegedRolesDB = new Keyv(
-	'sqlite://database.sqlite',
-	{ namespace: 'privilegedRoles' }
-);
-privilegedRolesDB.on('error', err => console.log(
-	'Connection Error when searching for privilegedRolesDB',
-	err
-));
+import * as guildConfig from '../util/guildConfig.mjs';
+/** Load privileged roles data from guild-config directory */
+async function getPrivilegedRoles(guildId) {
+	return guildConfig.get(
+		guildId,
+		'privilegedRoles'
+	);
+}
 
 export async function deployPermissions({
 	// The id of the guild to which to apply the command permission overwrites:
@@ -56,9 +51,6 @@ export async function deployPermissions({
 		}
 		commandNameToMinPrivs[command.data.name] = command.minimumPrivilege;
 	}
-
-	// const commandNameToMinPrivs = await commandMetadataDB.get('minPrivileges');
-
 	// If there are no commands which have setDefaultPermission(false), don't
 	// bother registering command permission overwrites:
 	if (Object.keys(commandNameToMinPrivs).length === 0) {
@@ -72,7 +64,7 @@ export async function deployPermissions({
 
 	// May be undefined if privileged roles haven't been configured for this guild
 	// yet:
-	const privilegedRolesForThisGuild = await privilegedRolesDB.get(guildId);
+	const privilegedRolesForThisGuild = await getPrivilegedRoles(guildId);
 
 	for (const commandName in commandNameToMinPrivs) {
 		const currentCommandMinPriv = commandNameToMinPrivs[commandName];

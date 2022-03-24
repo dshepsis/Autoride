@@ -1,38 +1,27 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-// import Keyv from 'keyv';
 import { byName } from '../privilegeLevels.mjs';
 import * as guildConfig from '../util/guildConfig.mjs';
 
-
-// Load configuration database. This will be used to find which color roles
-// the current server has:
-// const colorRolesDB = new Keyv('sqlite://database.sqlite', { namespace: 'colorRoles' });
-// colorRolesDB.on('error', err => console.log('Connection Error when searching for colorRolesDB', err));
-
 const ALREADY_PRESENT = Symbol('Color role is already present in this guild.');
 async function addColorRole(guildId, role, message) {
-	// const guildColorRoles = await colorRolesDB.get(guildId);
 	const guildColorRoles = await guildConfig.get(guildId, 'colorRoles');
 	const roleData = {
 		name: role.name,
 		message,
 	};
 	if (guildColorRoles === undefined) {
-		// return colorRolesDB.set(guildId, { [role.id]: roleData });
 		return guildConfig.set(guildId, 'colorRoles', { [role.id]: roleData });
 	}
 	if (role.id in guildColorRoles) {
 		return ALREADY_PRESENT;
 	}
 	guildColorRoles[role.id] = roleData;
-	// return colorRolesDB.set(guildId, guildColorRoles);
 	return guildConfig.set(guildId, 'colorRoles', guildColorRoles);
 }
 
 const NOT_PRESENT = Symbol('Color role is not present in this guild.');
 const NO_ROLES = Symbol('This guild has no color roles.');
 async function removeColorRole(guildId, role) {
-	// const guildColorRoles = await colorRolesDB.get(guildId);
 	const guildColorRoles = await guildConfig.get(guildId, 'colorRoles');
 	if (guildColorRoles === undefined) {
 		return NO_ROLES;
@@ -41,13 +30,11 @@ async function removeColorRole(guildId, role) {
 		return NOT_PRESENT;
 	}
 	delete guildColorRoles[role.id];
-	// return colorRolesDB.set(guildId, guildColorRoles);
 	return guildConfig.set(guildId, 'colorRoles', guildColorRoles);
 }
 
 async function getColorRolesStr(interaction) {
 	const guild = interaction.guild;
-	// const guildColorRoles = await colorRolesDB.get(guild.id);
 	const guildColorRoles = await guildConfig.get(guild.id, 'colorRoles');
 	if (guildColorRoles === undefined) return NO_ROLES;
 	const roleIds = Object.keys(guildColorRoles);

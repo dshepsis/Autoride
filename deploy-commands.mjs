@@ -19,7 +19,6 @@ const commandNameToMinPrivs = Object.create(null);
 // a command with setDefaultPermission(false), then also read its required
 // privileges:
 for (const command of commands) {
-	// const command = require(`./commands/${file}`);
 	commandData.push(command.data.toJSON());
 
 	const usableByDefault = command.data.defaultPermission ?? true;
@@ -53,8 +52,7 @@ const rest = new REST({ version: '9' }).setToken(token);
 		for (const command of response) {
 			commandNameToId[command.name] = command.id;
 		}
-		// Make sure that the Keyv store has been updated:
-		// await updateMetadataPromise;
+		// Make sure that the guild-config file has been updated:
 		await deployPermissions({
 			guildId,
 			commandNameToId,

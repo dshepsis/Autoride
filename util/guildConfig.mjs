@@ -58,6 +58,12 @@ function getConfigDirPath(guildId) {
  * config file is for.
  * @param {string} namespace An identifier signifying what kind of configuration
  * data this config file holds.
+ * @returns {(object|undefined)} Returns the object containing the deserialized
+ * config data for the requested guildId and namespace, or undefined if no such
+ * config data has yet been created using the set function of this module.
+ * @throws {Error} Throws an error if the content of the corresponding file is
+ * not a valid JSON-parseable string. This should only happen if the file was
+ * manually edited
  */
 export async function get(guildId, namespace) {
 	const cacheKey = getCacheKey(guildId, namespace);
@@ -73,7 +79,6 @@ export async function get(guildId, namespace) {
 	catch (fileReadingError) {
 		// If the file doesn't exist, return undefined. This matches the behavior of
 		// Keyv.
-		console.warn('error reading config file: ', configFilePath);
 		return undefined;
 	}
 	let parsedObj;

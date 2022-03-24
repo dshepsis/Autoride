@@ -1,51 +1,49 @@
-import Keyv from 'keyv';
-
-// Load URL database. This is used to store URLs contained in the requested
-// message. These URLs are periodically checked by the
-// monitorURLsForHTTPErrors routine to see if any of them give HTTP errors.
-// If any of them do, notify the creator of the message.
-const urlsDB = new Keyv(
-	'sqlite://database.sqlite',
-	{ namespace: 'guildResources' }
-);
-urlsDB.on('error', err => console.log(
-	'Connection Error when searching for urlsDB',
-	err
-));
+import * as guildConfig from './guildConfig.mjs';
+/** Load monitored URL data from guild-config directory */
+async function getMonitoredURLs(guildId) {
+	return guildConfig.get(
+		guildId,
+		'monitoredURLs'
+	);
+}
+/** Write monitored URL data to guild-config directory */
+async function setMonitoredURLs(guildId, guildMonitoredURLs) {
+	return guildConfig.set(guildId, 'monitoredURLs', guildMonitoredURLs);
+}
 
 // Cache:
-const guildIdToUrlObjs = Object.create(null);
 const guildIdToUrlMaps = Object.create(null);
 
-// Structure of a urlObj:
+/**
+ * @typedef {Object} NotifyChannelInfo An object storing information about the
+ * notification to send to a given channel
+ * @prop {string[]} userIds
+ * @prop {string} [info]
+ *
+ * @typedef {Object} UrlObj An object storing information about a URL being
+ * monitored by AutoRide via the monitorURLsForHTTPErrors routine.
+ * @prop {string} url The URL being monitored
+ * @prop {boolean} enabled Whether the URL is currently being monitored. If
+ * false, monitoring is temporarily disabled for the url until re-enabled via
+ * the http-monitor re-enable command
+ * @prop {Object.<string, NotifyChannelInfo>} notifyChannels An object
+ * mapping from channel Ids to objects containing information about the
+ * notification message to send to that channel in the event of an error.
+ */
 
-// const urlObj = {
-// 	url: 'https://example.com', // Which URL to check
-//	enabled: true, // Whether this URL should be checked in monitorURLsForHTTPErrors
-// 	notifyChannels: { // Where to send notification messages
-// 		'931013295740166194': { // id of channel to send message to
-// 			userIds: ['263153040041836555', '163125227826446336'], // users to notify
-// 			info: 'My example website to check', // Note for this notification
-// 		},
-// 		'931013295740166195': { // another channel to send a message to:
-//			...
-// 		},
-// 	},
-// };
-
-// Returns an array of all url objects in the DB for the given guild id:
+/**
+ * @param {string} guildId The Id of the guild to get monitored URL data for
+ * @returns {Promise<UrlObj[]>} An array of all url objects for the given guild:
+ */
 export async function getUrlObjsForGuild(guildId) {
-	if (guildId in guildIdToUrlObjs) {
-		return guildIdToUrlObjs[guildId];
-	}
-	const urlObjs = await urlsDB.get(guildId);
+	/** @type {UrlObj[]} */
+	const urlObjs = await getMonitoredURLs(guildId);
 	// If this guild doesn't have a urlObjs array, make an empty one:
 	if (!urlObjs) {
 		const emptyUrlObj = [];
-		await urlsDB.set(guildId, emptyUrlObj);
+		await setMonitoredURLs(guildId, emptyUrlObj);
 		return emptyUrlObj;
 	}
-	guildIdToUrlObjs[guildId] = urlObjs;
 	return urlObjs;
 }
 
@@ -61,10 +59,9 @@ export async function getUrlObjByUrl(guildId, url) {
 	if (guildId in guildIdToUrlMaps) {
 		return guildIdToUrlMaps[guildId].get(url);
 	}
-	const urlObjs = await getUrlObjsForGuild(guildId);
+	const urlObjs = await getMonitoredURLs(guildId);
 	const urlMap = new Map();
 	for (const urlObj of urlObjs) {
-		urlMap.set(3, 4);
 		urlMap.set(urlObj.url, urlObj);
 	}
 	guildIdToUrlMaps[guildId] = urlMap;
@@ -118,10 +115,9 @@ export function mergeUrlObj({ target, source } = {}) {
 // Adds a new urlObj for this guild, or merges the parameter obj with the
 // existing obj, updating the info and adding any new channels/users:
 // async function addUrlObj(guildId, urlObj) {
-export async function addUrlObjs(guildId, urlObjs) {
-	console.log('updating urlObjs 1');
-
-	for (const urlObjToAdd of urlObjs) {
+export async function addUrlObjs(guildId, urlObjsToAdd) {
+	const urlObjs = await getUrlObjsForGuild(guildId);
+	for (const urlObjToAdd of urlObjsToAdd) {
 		const urlToAdd = urlObjToAdd.url;
 		const currentUrlObj = await getUrlObjByUrl(guildId, urlToAdd);
 
@@ -132,7 +128,6 @@ export async function addUrlObjs(guildId, urlObjs) {
 			guildIdToUrlMaps[guildId].set(urlToAdd, urlObjToAdd);
 
 			urlObjs.push(urlObjToAdd);
-			urlsDB.set(guildId, urlObjs);
 			continue;
 		}
 		// If the requested URL is ALREADY being monitored, add the data from
@@ -140,10 +135,7 @@ export async function addUrlObjs(guildId, urlObjs) {
 		// url only gets one urlObj per guild.
 		mergeUrlObj({ target: currentUrlObj, source: urlObjToAdd });
 	}
-
-	console.log('updating urlObjs 2');
-	console.log(JSON.stringify(urlObjs, null, 2));
-	return urlsDB.set(guildId, urlObjs);
+	return setMonitoredURLs(guildId, urlObjs);
 }
 
 // Set the url object for the given url in the given guild to be either enabled
@@ -159,7 +151,7 @@ export async function setUrlEnabled({
 	}
 	const urlObjs = await getUrlObjsForGuild(guildId);
 	urlObj.enabled = enabled;
-	await urlsDB.set(guildId, urlObjs);
+	await setMonitoredURLs(guildId, urlObjs);
 	return urlObj;
 }
 
@@ -180,7 +172,7 @@ export async function setUrlsEnabled({
 	for (const selectedUrlObj of selectedUrlObjs) {
 		selectedUrlObj.enabled = enabled;
 	}
-	await urlsDB.set(guildId, urlObjs);
+	await setMonitoredURLs(guildId, urlObjs);
 	return selectedUrlObjs;
 }
 
@@ -197,7 +189,7 @@ export async function deleteUrlObj(guildId, url) {
 		return false;
 	}
 	urlObjs.splice(index, 1);
-	await urlsDB.set(guildId, urlObjs);
+	await setMonitoredURLs(guildId, urlObjs);
 
 	// Remove the given url from the cache map:
 	if (guildId in guildIdToUrlMaps) {
@@ -220,7 +212,7 @@ export async function overwriteUrlObj(guildId, newUrlObj) {
 		urlObjs.push(newUrlObj);
 	}
 	urlObjs.splice(index, 1, newUrlObj);
-	await urlsDB.set(guildId, urlObjs);
+	await setMonitoredURLs(guildId, urlObjs);
 
 	guildIdToUrlMaps[guildId].set(overwritingUrl, newUrlObj);
 }

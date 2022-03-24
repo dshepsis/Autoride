@@ -54,15 +54,4 @@ export async function importDir(dirPath) {
 	});
 	dirCache.set(dirPath, modules);
 	return modules;
-
-	// Alternate version which returns object mapping from filenames to modules?
-	// This would give you access to the filenames, which you don't get with the
-	// above, but I'm not sure if that's necessary or helpful...
-	// const modules = await Promise.all(importPromises);
-	// const moduleObj = Object.create(null);
-	// for (let i = 0, len = modules.length; i < len; ++i) {
-	// 	moduleObj[jsFilenames[i]] = modules[i].default;
-	// }
-	// dirCache.set(dirPath, moduleObj);
-	// return moduleObj;
 }

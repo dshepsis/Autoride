@@ -1,5 +1,5 @@
-import { fetchStatusCode } from '../util/fetchStatusCode.mjs';
-import { getEnabledUrlObjsForGuild, setUrlsEnabled } from '../util/manageUrlsDB.mjs';
+import { fetchResponseChain, fetchStatusCode } from '../util/fetchStatusCode.mjs';
+import { getEnabledUrlObjsForGuild, setUrlsEnabled } from '../util/manageMonitoredURLs.mjs';
 
 async function sendMessageToGuildChannel({
 	guild,
@@ -10,7 +10,87 @@ async function sendMessageToGuildChannel({
 	return channel.send({ content });
 }
 
-// Check the status codes for all of the URLs stored in the DB for the given
+/**
+ * @typedef {Object} NotifyChannelInfo An object storing information about the
+ * notification to send to a given channel
+ * @prop {string[]} userIds Which users to notify in the given channel
+ * @prop {string} [info] An optional extra message to include with notifications
+ *
+ * @typedef {Object} UrlObj An object storing information about a URL being
+ * monitored by AutoRide via the monitorURLsForHTTPErrors routine.
+ * @prop {string} url The URL being monitored
+ * @prop {boolean} enabled Whether the URL is currently being monitored. If
+ * false, monitoring is temporarily disabled for the url until re-enabled via
+ * the http-monitor re-enable command
+ * @prop {Object.<string, NotifyChannelInfo>} notifyChannels An object
+ * mapping from channel Ids to objects containing information about the
+ * notification message to send to that channel in the event of an error.
+ */
+
+/**
+ * Similar to reportStatusCodesForGuild, except it directly takes an array of
+ * urlObjs and returns a string summarizing both the normal responses and the
+ * errors, ignoring the notifyChannels property.
+ *
+ * @param {(string | UrlObj)[]} urlObjs An array of url strings or UrlObjs to check
+ * @param {Object} options
+ * @param {boolean} [options.errorsOnly=false] If true, include lines only for
+ * urls which result in an error. Otherwise, include a line for all urls. If
+ * true and no urls result in an error, a special-case message is returned.
+ * @returns {Promise<string>} A string message with a human-readable line for each urlObj
+ * giving information about the response received from that url.
+ */
+export async function getReportStr(urlObjs, { errorsOnly = false } = {}) {
+	if (urlObjs.length === 0) {
+		return 'No URLs were given to be tested';
+	}
+	const urls = urlObjs.map(o => (typeof o === 'string') ? o : o.url);
+	const responsePromises = urls.map(fetchResponseChain);
+	const responseChains = await Promise.all(responsePromises);
+
+	const outLines = [];
+
+	for (let i = 0, len = responseChains.length; i < len; ++i) {
+		const chain = responseChains[i];
+		const url = urls[i];
+		const escapedURL = '`' + url.replaceAll('`', '\\`') + '`';
+
+		// A resolved promise indicates that a response was received, but that
+		// response may have been an HTTP error, so filter out acceptable status
+		// codes:
+		let line = `• ${escapedURL} `;
+		const chainLen = chain.length;
+		const endResponse = chain[chainLen - 1];
+		if (chainLen > 1) {
+			const endURL = endResponse.url;
+			line += `redirects to ${'`' + endURL.replaceAll('`', '\\`') + '`'} which `;
+		}
+		const httpResponseCode = endResponse.result;
+		if (httpResponseCode === 200) {
+			if (errorsOnly) {
+				// If the errorsOnly option is truthy, do not include a line for URLs
+				// which end in an OK result:
+				continue;
+			}
+			line += 'is OK.';
+		}
+		else if (typeof httpResponseCode === 'number') {
+			line += `results in an HTTP ${httpResponseCode} error.`;
+		}
+		else {
+			line += `results in a "${httpResponseCode}" Node request error.`;
+		}
+		outLines.push(line);
+	}
+	if (outLines.length === 0) {
+		return 'No HTTP errors were found for any of the given URLs';
+	}
+	return outLines.join('\n');
+}
+
+// @TODO Fix this to use fetchResponseChain instead!!! This currentlywon't check if a
+// redirect leads to a 404!!!
+// Check the status codes for all of the URLs stored in the config for the given
 // guild. Then, if any of them are error codes, send a message to the
 // corresponding channel.
 export async function reportStatusCodesForGuild(client, guildId) {

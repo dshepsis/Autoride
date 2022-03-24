@@ -1,4 +1,5 @@
 import { MessageActionRow, MessageButton } from 'discord.js';
+import { Replyable } from './Replyable.mjs';
 
 // User response codes:
 export const USER_CANCEL = Symbol('User pressed the cancel button');
@@ -8,8 +9,14 @@ export const USER_TIMEOUT = Symbol('User did not interact with the confirm or ca
 // Provides a declarative way to give the user of a command a confirm/cancel
 // dialogue (using Action Row Buttons) before continuing to execute it:
 export async function awaitCommandConfirmation({
-	// The interaction object for the command which we're asking the user to confirm
+	// The interaction object for the command which we're asking the
+	// user to confirm.
 	interaction,
+	// Optional. The message to which to reply with the confirmation message. This
+	// is an alternative to replying to the interaction. This is useful if the
+	// command has multiple steps and/or you want to give a button prompt after
+	// another message (either one of the bot's own messages, or someone else's):
+	messageToReplyTo,
 	// The name of the command. Only used in message strings.
 	commandName,
 	// Optional. The content of the initial warning message presented to the
@@ -17,7 +24,9 @@ export async function awaitCommandConfirmation({
 	warningContent = `Are you sure you want to use this '${commandName}' command?`,
 	// Optional. The content of the message presented to the user if they press
 	// the confirm button. Set this to null if you don't want a message sent
-	// upon pressing the confrim button.
+	// upon pressing the confirm button. This is useful if you want to do an
+	// async option and then send a message yourself via the buttonInteraction
+	// property of the return object.
 	confirmContent = `Executing '${commandName}' command...`,
 	// Optional. The content of the message presented to the user if they press
 	// the cancel button. Set this to null if you don't want a message sent
@@ -25,6 +34,8 @@ export async function awaitCommandConfirmation({
 	cancelContent = `'${commandName}' command cancelled.`,
 	// Optional. The text of the confirm button.
 	confirmButtonLabel = 'Confirm',
+	// Optional. The text of the cancel button.
+	cancelButtonLabel = 'Cancel',
 	// Optional. The style of the confirm button. Options are:
 	// - PRIMARY, a blurple button
 	// - SECONDARY, a grey button
@@ -52,16 +63,18 @@ export async function awaitCommandConfirmation({
 		// Create cancel button:
 		.addComponents(new MessageButton()
 			.setCustomId(cancelId)
-			.setLabel('Cancel')
+			.setLabel(cancelButtonLabel)
 			.setStyle('SECONDARY'),
 		)
 	);
-	await interaction.reply({
+	// Use this utility class to allow for generically replying/editing replies to
+	// both interactions and messages
+	const replyTo = new Replyable({ message: messageToReplyTo, interaction });
+	const warningMessage = await replyTo.reply({
 		content: warningContent,
 		components: [row],
 		ephemeral,
 	});
-	const warningMessage = await interaction.fetchReply();
 
 	// Wait for the user to press a button, with the given time limit:
 	const filter = warningInteraction => (
@@ -80,7 +93,7 @@ export async function awaitCommandConfirmation({
 		const content = `This '${commandName}' command timed out after ${
 			Math.floor(timeout_ms / 1000)
 		} seconds. Please dismiss this message and use the command again if needed.`;
-		await interaction.editReply({ content, components: [], ephemeral: true });
+		await replyTo.editReply({ content, components: [], ephemeral });
 		return {
 			responseType: USER_TIMEOUT,
 			botMessage: warningMessage,
@@ -90,10 +103,10 @@ export async function awaitCommandConfirmation({
 	// User pressed the confirm button:
 	if (buttonInteraction.customId === confirmId) {
 		if (confirmContent !== null) {
-			await interaction.editReply({
+			await replyTo.editReply({
 				content: confirmContent,
 				components: [],
-				ephemeral: true,
+				ephemeral,
 			});
 		}
 		return {
@@ -105,10 +118,10 @@ export async function awaitCommandConfirmation({
 	// User pressed the cancel button:
 	if (buttonInteraction.customId === cancelId) {
 		if (cancelContent !== null) {
-			await interaction.editReply({
+			await replyTo.editReply({
 				content: cancelContent,
 				components: [],
-				ephemeral: true,
+				ephemeral,
 			});
 		}
 		return {
@@ -117,6 +130,6 @@ export async function awaitCommandConfirmation({
 			buttonInteraction,
 		};
 	}
-	// This should never execute?
+	// This should never execute
 	throw new Error(`Unknown confirmation action for '${commandName}'!`);
 }
