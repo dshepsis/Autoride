@@ -116,7 +116,6 @@ export async function reportStatusCodesForGuild(client, guildId) {
 		}
 		else if (typeof httpResponseCode === 'number') {
 			// HTTP Errors (e.g. 404 Not Found):
-			// line += `results in an HTTP ${httpResponseCode} error.`;
 			errorDescription = `an HTTP ${httpResponseCode} error`;
 		}
 		// Node request errors (as opposed to HTTP errors):

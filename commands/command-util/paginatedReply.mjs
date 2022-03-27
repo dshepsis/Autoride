@@ -1,4 +1,3 @@
-// import { ButtonInteraction } from 'discord.js';
 import { MessageEmbed, MessageActionRow, MessageButton } from 'discord.js';
 
 export async function paginatedReply({

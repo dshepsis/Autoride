@@ -295,7 +295,7 @@ export async function execute(interaction) {
 			: await urlObjsToHumanReadableStr(
 				filteredUrlObjs,
 				guild,
-				{ verbose: false }// numObjs <= 5 }
+				{ verbose: false }
 			)
 		);
 
@@ -308,12 +308,6 @@ export async function execute(interaction) {
 			contents,
 			replyable: new Replyable({ interaction }),
 		});
-		// const splitContent = splitMessageRegex(content, { regex: /\n+(?! {4})/g });
-		// await interaction.reply({ content: splitContent[0] });
-		// for (let i = 1, len = splitContent.length; i < len; ++i) {
-		// 	await interaction.followUp({ content: splitContent[i] });
-		// }
-		// return;
 	}
 	if (subcommandName === 'test') {
 		const scope = interaction.options.getString('scope');
