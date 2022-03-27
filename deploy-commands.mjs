@@ -5,13 +5,14 @@ import { importJSON } from './util/importJSON.mjs';
 
 import { pkgRelPath } from './util/pkgRelPath.mjs';
 
-const { clientId, guildId, token } = await importJSON(
+const { clientId, guildIds, developmentGuildId, token } = await importJSON(
 	pkgRelPath('./config.json')
 );
 import { deployPermissions } from './util/deploy-permissions.mjs';
 
 // An array of SlashCommandBuilder objects for every command:
 const commandData = [];
+const developmentCommandData = [];
 
 const commands = await importDir(pkgRelPath('./commands/'));
 const commandNameToMinPrivs = Object.create(null);
@@ -19,7 +20,11 @@ const commandNameToMinPrivs = Object.create(null);
 // a command with setDefaultPermission(false), then also read its required
 // privileges:
 for (const command of commands) {
-	commandData.push(command.data.toJSON());
+	const commandJSON = command.data.toJSON();
+	if (!command.inDevelopment) {
+		commandData.push(commandJSON);
+	}
+	developmentCommandData.push(commandJSON);
 
 	const usableByDefault = command.data.defaultPermission ?? true;
 	const minimumPrivilege = command.minimumPrivilege;
@@ -38,29 +43,38 @@ for (const command of commands) {
 
 const rest = new REST({ version: '9' }).setToken(token);
 
-(async () => {
+async function deployCommandsToGuild(guildId, guildCommandData) {
 	try {
-		console.log('Registering application commands...');
+		console.log(`Registering application commands for guild ${guildId}...`);
 		const response = await rest.put(
 			Routes.applicationGuildCommands(clientId, guildId),
-			{ body: commandData }
+			{ body: guildCommandData }
 		);
 		console.log('Successfully registered application commands.');
 
-		console.log('Applying application command permission overwrites...');
+		console.log(`Applying application command permission overwrites for guild ${guildId}...`);
 		const commandNameToId = Object.create(null);
 		for (const command of response) {
 			commandNameToId[command.name] = command.id;
 		}
 		// Make sure that the guild-config file has been updated:
-		await deployPermissions({
-			guildId,
-			commandNameToId,
-			rest,
-		});
-		console.log('Successfully applied permission overwrites.');
+		try {
+			await deployPermissions({
+				guildId,
+				commandNameToId,
+				rest,
+			});
+			console.log('Successfully applied permission overwrites.');
+		}
+		catch (PermissionError) {
+			console.log('Failed to apply permission overwrites. This guild may have been deleted.');
+		}
 	}
 	catch (error) {
 		console.error(error);
 	}
-})();
+}
+await deployCommandsToGuild(developmentGuildId, developmentCommandData);
+for (const guildId of guildIds) {
+	await deployCommandsToGuild(guildId, commandData);
+}

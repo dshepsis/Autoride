@@ -1,6 +1,20 @@
 # Autoride
 Discord JS Bot
 
+# Scopes
+This bot needs the following OAuth2 Scopes (see the URL generator in the OAuth2
+section of this Bot's application page):
+- application.commands: In order to register and respond to slash commands
+- bot: For bot permissions
+
+# Bot Permissions
+This bot needs the following Bot Permissions:
+- Send Messages: Used mainly for the /embed-message command and
+routines/appointments
+- Manage Messages: For the /prune command
+- Embed Links: Technically optional, but desired for the /embed-message and
+/wiki commands
+
 # Features I have imagined:
 - Feature parity with MEE6 as it's currently used in the Okami Speedrunning Discord
     - Embed messages (like used in #resources)
