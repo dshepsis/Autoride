@@ -4,6 +4,7 @@ import { MessageEmbed, MessageActionRow, MessageButton } from 'discord.js';
 export async function paginatedReply({
 	contents,
 	replyable,
+	editReply = false,
 } = {}) {
 	const numPages = contents.length;
 	const contentEmbeds = contents.map(
@@ -11,6 +12,9 @@ export async function paginatedReply({
 	);
 	// If there is only one page, do not include the page buttons:
 	if (numPages === 1) {
+		if (editReply) {
+			return replyable.editReply({ embeds: contentEmbeds });
+		}
 		return replyable.reply({ embeds: contentEmbeds });
 	}
 	let currentPage = 0;
@@ -71,7 +75,13 @@ export async function paginatedReply({
 			components: [row],
 		};
 	};
-	const botMessage = await replyable.reply(getPageResponse(currentPage));
+	if (editReply) {
+		return replyable.editReply({ embeds: contentEmbeds });
+	}
+	const botMessage = await (editReply ?
+		replyable.editReply(getPageResponse(currentPage))
+		: replyable.reply(getPageResponse(currentPage))
+	);
 	// make listener for buttons which changes the currentPage var and calls
 	// getPageResponse or w/e. This should be ez
 

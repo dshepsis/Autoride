@@ -1,4 +1,4 @@
-import { fetchResponseChain, fetchStatusCode } from '../util/fetchStatusCode.mjs';
+import { fetchResponseChain, testUrl } from '../util/fetchStatusCode.mjs';
 import { getEnabledUrlObjsForGuild, setUrlsEnabled } from '../util/manageMonitoredURLs.mjs';
 
 async function sendMessageToGuildChannel({
@@ -32,41 +32,37 @@ async function sendMessageToGuildChannel({
  * urlObjs and returns a string summarizing both the normal responses and the
  * errors, ignoring the notifyChannels property.
  *
- * @param {(string | UrlObj)[]} urlObjs An array of url strings or UrlObjs to check
+ * @param {(string | UrlObj)[]} urlObjs An array of url strings or UrlObjs to
+ * check
  * @param {Object} options
  * @param {boolean} [options.errorsOnly=false] If true, include lines only for
  * urls which result in an error. Otherwise, include a line for all urls. If
  * true and no urls result in an error, a special-case message is returned.
- * @returns {Promise<string>} A string message with a human-readable line for each urlObj
- * giving information about the response received from that url.
+ * @returns {Promise<string>} A string message with a human-readable line for
+ * each urlObj giving information about the response received from that url.
  */
 export async function getReportStr(urlObjs, { errorsOnly = false } = {}) {
 	if (urlObjs.length === 0) {
 		return 'No URLs were given to be tested';
 	}
 	const urls = urlObjs.map(o => (typeof o === 'string') ? o : o.url);
-	const responsePromises = urls.map(fetchResponseChain);
-	const responseChains = await Promise.all(responsePromises);
+	const testResults = await Promise.all(urls.map(testUrl));
 
 	const outLines = [];
 
-	for (let i = 0, len = responseChains.length; i < len; ++i) {
-		const chain = responseChains[i];
-		const url = urls[i];
+	for (const result of testResults) {
+		const url = result.startUrl;
 		const escapedURL = '`' + url.replaceAll('`', '\\`') + '`';
 
 		// A resolved promise indicates that a response was received, but that
 		// response may have been an HTTP error, so filter out acceptable status
 		// codes:
 		let line = `• ${escapedURL} `;
-		const chainLen = chain.length;
-		const endResponse = chain[chainLen - 1];
-		if (chainLen > 1) {
-			const endURL = endResponse.url;
-			line += `redirects to ${'`' + endURL.replaceAll('`', '\\`') + '`'} which `;
+		if (result.isRedirect) {
+			const escapedEndURL = '`' + result.endUrl.replaceAll('`', '\\`') + '`';
+			line += `redirects to ${escapedEndURL} which `;
 		}
-		const httpResponseCode = endResponse.result;
-		if (httpResponseCode === 200) {
+		if (result.isOK) {
 			if (errorsOnly) {
 				// If the errorsOnly option is truthy, do not include a line for URLs
 				// which end in an OK result:
@@ -74,11 +70,11 @@ export async function getReportStr(urlObjs, { errorsOnly = false } = {}) {
 			}
 			line += 'is OK.';
 		}
-		else if (typeof httpResponseCode === 'number') {
-			line += `results in an HTTP ${httpResponseCode} error.`;
+		else if (result.endStatusCode) {
+			line += `results in an HTTP ${result.endStatusCode} error.`;
 		}
 		else {
-			line += `results in a "${httpResponseCode}" Node request error.`;
+			line += `results in a "${result.nodeError}" Node request error.`;
 		}
 		outLines.push(line);
 	}
@@ -88,8 +84,6 @@ export async function getReportStr(urlObjs, { errorsOnly = false } = {}) {
 	return outLines.join('\n');
 }
 
-// @TODO Fix this to use fetchResponseChain instead!!! This currentlywon't check if a
-// redirect leads to a 404!!!
 // Check the status codes for all of the URLs stored in the config for the given
 // guild. Then, if any of them are error codes, send a message to the
 // corresponding channel.
@@ -98,54 +92,49 @@ export async function reportStatusCodesForGuild(client, guildId) {
 	if (!urlObjs) {
 		return null;
 	}
+	const urls = urlObjs.map(o => o.url);
+	const responsePromises = urls.map(fetchResponseChain);
+	const responseChains = await Promise.all(responsePromises);
 
-	const statusCodePromises = urlObjs.map(obj => fetchStatusCode(obj.url));
-	const statusResults = await Promise.allSettled(statusCodePromises);
 	const errorsPerChannel = Object.create(null);
 	let anyErrors = false;
 
 	const urlsToDisableSet = new Set();
 
-	// For every URL for this guild, find all of them which resulted in some kind
-	// of error upon HTTPS request. Store some information about each such
-	// URL/error, so that report messages can be sent later:
-	for (let i = 0, len = statusResults.length; i < len; ++i) {
-		const statusResult = statusResults[i];
+	for (let i = 0, len = responseChains.length; i < len; ++i) {
+		const chain = responseChains[i];
+		const url = urls[i];
+		const chainLen = chain.length;
+		const endResponse = chain[chainLen - 1];
+
 		let errorDescription;
 
-		// A resolved promise indicates that a response was received, but that
-		// response may have been an HTTP error, so filter out acceptable status
-		// codes:
-		if (statusResult.status === 'fulfilled') {
-			const httpResponseCode = statusResult.value;
-			// 200 "OK" is a normal response. 301 "Moved Permanently", 302 "Moved
-			// Temporarily" and 303 "See Other" are basic redirects.
-			if ([200, 301, 302, 303].includes(httpResponseCode)) {
-				continue;
-			}
+		const httpResponseCode = endResponse.result;
+		// An OK HTTP response, indicating the final result is valid:
+		if (httpResponseCode === 200) {
+			continue;
+		}
+		else if (typeof httpResponseCode === 'number') {
+			// HTTP Errors (e.g. 404 Not Found):
+			// line += `results in an HTTP ${httpResponseCode} error.`;
 			errorDescription = `an HTTP ${httpResponseCode} error`;
 		}
-		// If a promise didn't resolve, it must have rejected due to an error event
-		// on the https request object in fetchStatusCode:
-		else {
-			const errorCode = statusResult.reason;
-			if (errorCode === 'ENOTFOUND') {
-				errorDescription = 'an invalid URL (no response)';
-			}
-			else {
-				errorDescription = `a "${errorCode}" Node request error`;
-			}
+		// Node request errors (as opposed to HTTP errors):
+		else if (httpResponseCode === 'ENOTFOUND') {
+			errorDescription = 'an invalid URL (no response)';
 		}
-		// If the request rejected (e.g. due to getting no response from the URL) or
-		// received an http error response, log info about it:
-		anyErrors = true;
-		const urlObj = urlObjs[i];
-		const url = urlObj.url;
-		const notifyChannels = urlObj.notifyChannels;
+		else {
+			errorDescription = `a "${httpResponseCode}" Node request error`;
+		}
 
 		// Prevent this URL from being checked for errors again until it is
 		// re-enabled via the /http-monitor re-enable command:
 		urlsToDisableSet.add(url);
+
+		anyErrors = true;
+		const urlObj = urlObjs[i];
+		const notifyChannels = urlObj.notifyChannels;
+
 
 		// For all of the channels that this urlObj stores in its notifyChannels
 		// object, add some information to the errorsPerChannel object so messages

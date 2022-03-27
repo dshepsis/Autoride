@@ -1,4 +1,7 @@
-// Highest privilege at the top (lowest index):
+/**
+ * An array of objects describing different privilege levels, in order, with the
+ * highest privilege at the top (lowest index):
+ */
 export const byOrder = Object.freeze([
 	{
 		name: 'OWNER',
@@ -27,10 +30,15 @@ for (let i = 0, len = byOrder.length; i < len; ++i) {
 Object.freeze(byName);
 export { byName };
 
-// Format the privilege level names as choices usable for setChoices() in
-// setChoices() in .addStringOption() in SlashCommandBuilders:
+/**
+ * The privilege level names formatted as choices usable for setChoices() in
+ * .addStringOption() in SlashCommandBuilders:
+ */
 export const asChoices = Object.freeze(byOrder.map(p => ([p.name, p.name])));
 
-// A special value used in place of .byName[privilege level name]:
-// e.g. `minimumPrivilege: privilegeLevels.MASTER_USER_ONLY,`
+/**
+ * A special privilege level value used in place of
+ * .byName[privilege level name]:
+ * e.g. `minimumPrivilege: privilegeLevels.MASTER_USER_ONLY,`
+ */
 export const MASTER_USER_ONLY = 'Only the master user (bot owner) may use this command.';

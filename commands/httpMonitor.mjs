@@ -353,16 +353,15 @@ export async function execute(interaction) {
 		const content = await getReportStr(urlObjsToTest, { errorsOnly });
 
 		// For broader scopes (especially ALL), the resulting response is likely to
-		// exceed the character limit, so we use discord.js.util#splitMessage
-		// and interaction.followUp to send multiple messages:
-		const splitContent = splitMessageRegex(content, { regex: /\n+(?! {4})/g });
-
-		// Because deferReply was used, editReply has to be used here:
-		await interaction.editReply({ content: splitContent[0], ephemeral: false });
-		for (let i = 1, len = splitContent.length; i < len; ++i) {
-			await interaction.followUp({ content: splitContent[i] });
-		}
-		return;
+		// exceed the character limit, so we use splitMessageRegex. This is my
+		// replacement for discord.js.util#splitMessage while it is affected by
+		// https://github.com/discordjs/discord.js/issues/7674
+		const contents = splitMessageRegex(content, { regex: /\n+(?! {4})/g });
+		return paginatedReply({
+			contents,
+			replyable: new Replyable({ interaction }),
+			editReply: true, // Because deferReply was used, editReply has to be used
+		});
 	}
 
 	if (subcommandName === 'add') {
