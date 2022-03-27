@@ -1,5 +1,6 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { byOrder, asChoices, MASTER_USER_ONLY } from '../privilegeLevels.mjs';
+import { deployPermissions } from '../util/deploy-permissions.mjs';
 
 import * as guildConfig from '../util/guildConfig.mjs';
 /** Load privileged roles data from guild-config directory */
@@ -14,16 +15,12 @@ async function setPrivilegedRoles(guildId, guildPrivilegeLevels) {
 	return guildConfig.set(guildId, 'privilegedRoles', guildPrivilegeLevels);
 }
 
-let deployPermissions;
 const ALREADY_ASSOCIATED = Symbol('This role is already associated with this privilege level in this guild.');
 async function associateRoleWithPrivilegeLevel({
 	guild,
 	role,
 	privilegeLevelName,
 } = {}) {
-	if (deployPermissions === undefined) {
-		deployPermissions = await import('../util/deploy-permissions.mjs');
-	}
 	const guildId = guild.id;
 	const guildPrivilegeLevels = await getPrivilegedRoles(guildId);
 	if (guildPrivilegeLevels === undefined) {

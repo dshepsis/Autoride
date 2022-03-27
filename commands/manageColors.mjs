@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { byName } from '../privilegeLevels.mjs';
 import * as guildConfig from '../util/guildConfig.mjs';
+import { splitReplyInteraction } from '../util/splitMessageRegex.mjs';
 
 const ALREADY_PRESENT = Symbol('Color role is already present in this guild.');
 async function addColorRole(guildId, role, message) {
@@ -12,9 +13,14 @@ async function addColorRole(guildId, role, message) {
 	if (guildColorRoles === undefined) {
 		return guildConfig.set(guildId, 'colorRoles', { [role.id]: roleData });
 	}
-	if (role.id in guildColorRoles) {
+	// If the role to be added doesn't have a message, and there is already an
+	// entry for this role in this guild, just return a symbol indicating that
+	// no changes were made
+	if (!message && (role.id in guildColorRoles)) {
 		return ALREADY_PRESENT;
 	}
+	// If this role isn't already tagged as a color role, or if a new message was
+	// included, add an entry, or update the existing one respectively.
 	guildColorRoles[role.id] = roleData;
 	return guildConfig.set(guildId, 'colorRoles', guildColorRoles);
 }
@@ -46,7 +52,7 @@ async function getColorRolesStr(interaction) {
 		}
 		return 'No message.';
 	}
-	return '__**Role - Message**__\n' + (roleIds
+	return (roleIds
 		.sort((r1, r2) => guild.roles.comparePositions(r2, r1))
 		.map(id => `<@&${id}> - ${idToMessageStr(id)}`)
 		.join('\n')
@@ -106,8 +112,9 @@ export async function execute(interaction) {
 				content = `Failed to add ${role} to the list of color roles.`;
 			}
 		}
+		return interaction.reply({ content });
 	}
-	else if (subcommandName === 'remove') {
+	if (subcommandName === 'remove') {
 		const role = interaction.options.getRole('role');
 		const result = await removeColorRole(interaction.guildId, role);
 		if (result === NOT_PRESENT) {
@@ -119,15 +126,18 @@ export async function execute(interaction) {
 		else {
 			content = `Failed to remove ${role} from the list of color roles.`;
 		}
+		return interaction.reply({ content });
 	}
-	else if (subcommandName === 'list') {
+	if (subcommandName === 'list') {
 		const roleStr = await getColorRolesStr(interaction);
 		if (roleStr === NO_ROLES) {
 			content = 'This server has no color roles. Try using `/manage-colors add` to add some!';
+			return interaction.reply({ content });
 		}
-		else {
-			content = `This server's color roles are:\n${roleStr}`;
-		}
+		const header = '__**Role - Message**__\n';
+		return splitReplyInteraction(
+			interaction,
+			`This server's color roles are:\n${header}${roleStr}`,
+			{ prepend: `More color roles:\n${header}` });
 	}
-	return interaction.reply({ content });
 }

@@ -9,8 +9,8 @@
  * string in the returned array
  * @param {RegExp} [options.regex] A global regex which matches the delimeters on
  * which to split text when needed to keep each part within maxLength
- * @param {string} [options.prepend] A string to add before each part iff
- * text is split into multiple parts
+ * @param {string} [options.prepend] A string to add before each part after the
+ * first if the text is split into multiple parts
  * @param {string} [options.append] A string to add after each part iff text
  * is split into multiple parts
  * @returns {string[]} An array of strings which are substrings of text, split
@@ -25,7 +25,8 @@ export function splitMessageRegex(text, {
 } = {}) {
 	if (text.length <= maxLength) return [text];
 	const parts = [];
-	let curPart = prepend;
+	// let curPart = prepend;
+	let curPart = '';
 	let chunkStartIndex = 0;
 
 	let prevDelim = '';
@@ -63,4 +64,19 @@ export function splitMessageRegex(text, {
 	addChunk(text.length - 1, '');
 	parts.push(curPart + append);
 	return parts;
+}
+
+export async function splitReplyInteraction(interaction, content, splitOptions) {
+	const contents = splitMessageRegex(content, splitOptions);
+	const messages = [await interaction.reply({
+		content: contents[0],
+		fetchReply: true,
+	})];
+	for (let i = 1; i < contents.length; ++i) {
+		messages.push(await interaction.followUp({
+			content: contents[i],
+			fetchReply: true,
+		}));
+	}
+	return messages;
 }
