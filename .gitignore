@@ -1,5 +1,6 @@
 # Config
 config.json
+autoride-config.json
 
 # Per-guild config data:
 guild-config/

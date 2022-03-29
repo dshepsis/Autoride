@@ -1,5 +1,19 @@
 # Autoride
-Discord JS Bot
+Discord JS Bot designed for the Okami Speedrunning Discord.
+
+# Commands
+These are the commands available with Autoride:
+- `/colors` — Easily switch color roles with an ephemeral paginated menu.
+- `/embed-message` — Direct Autoride to send a given message as an embed to the
+selected channel.
+- `/http-monitor` — View and change the list of URLs being monitored for HTTP
+errors, and test URLs for errors.
+- `/manage-colors` — View and change the list of color roles used for `/colors`
+- `/manage-privileges` — View and change the list of roles with the permissions
+to use this bot's privileged commands.
+- `/prune` — Delete a selected number of recent messages.
+- `/wiki` — Search for a page on the Okami Speedrunning wiki by title.
+
 
 # Scopes
 This bot needs the following OAuth2 Scopes (see the URL generator in the OAuth2
@@ -14,18 +28,24 @@ routines/appointments
 - Manage Messages: For the /prune command
 - Embed Links: Technically optional, but desired for the /embed-message and
 /wiki commands
+- Manage Roles: For the /colors command
+
+# Bot Role
+Please note that the Autoride Bot Role should be ranked higher than all color
+roles in your guild's role hierarchy. Otherwise, it will not be able to add or
+remove higher-ranked color roles when using the `/colors` command.
+
+Additionally, the Bot Role should have the "View Messages" channel permission in
+any channel from which you use the `/embed-messages` command, and the "Send
+Messages" channel permission in any channel to which you direct the embeded
+message to be sent.
 
 # Features I have imagined:
-- Feature parity with MEE6 as it's currently used in the Okami Speedrunning Discord
-    - Embed messages (like used in #resources)
-    - Color and bingo roles via command (and reactions as well?)
 - Welcome message for potential new runners.
 - Simple polls
 - Reminders, anywhere from minute to months.
 - Wiki integration:
-    - Improve the wiki command (auto-capitalization and no extra underscores).
-    - Notifications in the #wiki-editor-chat channel when pages are edited/created/deleted.
-    - Automatic page backups?
+    - Automatic page backups via Archive.org api?
 - Twitch integration:
     - Automatically delete posts in #streams when users are no longer streaming.
     - Try to detect when runners are streaming Okami and automatically post in #streams, or maybe DM those users to post themselves?
@@ -43,3 +63,5 @@ routines/appointments
     - Item value
     - Enemy health
 - Auride says (random)
+- Abbreviation finder / explainer (Maybe via wiki page?)
+- "On This Day" anniversary/history trivia routine.
