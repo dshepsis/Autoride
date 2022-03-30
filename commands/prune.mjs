@@ -45,14 +45,15 @@ export async function execute(interaction) {
 	}
 
 	// If the user confirmed they want to bulk delete messages:
+	let messagesDeleted;
 	try {
-		const messages = await interaction.channel.bulkDelete(amount, true);
-		const content = `Successfully deleted \`${messages.size}\` messages.`;
-		return buttonInteraction.update({ content, components: [], ephemeral: true });
+		messagesDeleted = await interaction.channel.bulkDelete(amount, true);
 	}
 	catch (error) {
 		console.error(error);
 		const content = 'There was an error trying to delete messages in this channel!';
 		return buttonInteraction.update({ content, components: [], ephemeral: true });
 	}
+	const content = `Successfully deleted \`${messagesDeleted.size}\` messages.`;
+	return buttonInteraction.update({ content, components: [], ephemeral: true });
 }

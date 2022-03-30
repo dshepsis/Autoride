@@ -11,12 +11,12 @@ export async function execute(interaction) {
 		}
 
 		try {
-			return command.execute(interaction);
+			return await command.execute(interaction);
 		}
 		catch (error) {
-			console.error(error);
+			console.error(`The "${interaction.commandName}" command failed with the following error:`, error);
 			const content = 'There was an error while executing this command!';
-			return interaction.reply({ content, ephemeral: true });
+			return await interaction.reply({ content, ephemeral: true });
 		}
 	}
 }

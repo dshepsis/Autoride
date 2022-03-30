@@ -95,14 +95,14 @@ export async function paginatedReply({
 		buttonData[buttonId].press();
 		buttonInteraction.update(getPageResponse(currentPage));
 	});
-	collector.on('end', () => {
+	collector.on('end', async () => {
 		for (const button of buttonOrder) {
 			button.component.setDisabled();
 		}
 		const content = 'This paginated message has timed out. Please re-use the original command to see the other pages again.';
 		// If the message was deleted, trying to edit it will throw:
 		try {
-			return replyable.editReply({ content });
+			return await replyable.editReply({ content, embeds: [], components: [] });
 		}
 		catch (error) {
 			return;

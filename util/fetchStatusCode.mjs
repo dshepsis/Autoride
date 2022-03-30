@@ -122,11 +122,12 @@ export async function testUrl(url) {
 // resolve with the 3-digit HTTP response status code. E.G. 404. If a
 // response isn't received, reject with error.
 export async function fetchStatusCode(url) {
+	let response;
 	try {
-		const response = await fetchResponse(url);
-		return response.statusCode;
+		response = await fetchResponse(url);
 	}
 	catch (httpsError) {
 		throw httpsError.code;
 	}
+	return response.statusCode;
 }

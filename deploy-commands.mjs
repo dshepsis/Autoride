@@ -44,35 +44,36 @@ for (const command of commands) {
 const rest = new REST({ version: '9' }).setToken(token);
 
 async function deployCommandsToGuild(guildId, guildCommandData) {
+	let response;
+	console.log(`Registering application commands for guild ${guildId}...`);
 	try {
-		console.log(`Registering application commands for guild ${guildId}...`);
-		const response = await rest.put(
+		response = await rest.put(
 			Routes.applicationGuildCommands(clientId, guildId),
 			{ body: guildCommandData }
 		);
-		console.log('Successfully registered application commands.');
+	}
+	catch (GuildCommandError) {
+		console.error('Failed to deploy commands. Please see this error message:', GuildCommandError);
+	}
+	console.log('Successfully registered application commands.');
 
-		console.log(`Applying application command permission overwrites for guild ${guildId}...`);
-		const commandNameToId = Object.create(null);
-		for (const command of response) {
-			commandNameToId[command.name] = command.id;
-		}
-		// Make sure that the guild-config file has been updated:
-		try {
-			await deployPermissions({
-				guildId,
-				commandNameToId,
-				rest,
-			});
-			console.log('Successfully applied permission overwrites.');
-		}
-		catch (PermissionError) {
-			console.log('Failed to apply permission overwrites. This guild may have been deleted.');
-		}
+	console.log(`Applying application command permission overwrites for guild ${guildId}...`);
+	const commandNameToId = Object.create(null);
+	for (const command of response) {
+		commandNameToId[command.name] = command.id;
 	}
-	catch (error) {
-		console.error(error);
+	// Make sure that the guild-config file has been updated:
+	try {
+		await deployPermissions({
+			guildId,
+			commandNameToId,
+			rest,
+		});
 	}
+	catch (PermissionError) {
+		console.error('Failed to apply permission overwrites. This guild may have been deleted. Please see this error message: ', PermissionError);
+	}
+	console.log('Successfully applied permission overwrites.');
 }
 await deployCommandsToGuild(developmentGuildId, developmentCommandData);
 for (const guildId of guildIds) {

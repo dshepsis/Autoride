@@ -41,28 +41,14 @@ export async function awaitCommandReply({
 		(botMessage.id === message?.reference?.messageId)
 		&& (allowAnyoneToRespond || (interaction.user.id === message?.author.id))
 	);
+	let collected;
 	try {
-		const collected = await interaction.channel.awaitMessages({
+		collected = await interaction.channel.awaitMessages({
 			filter,
 			max: 1,
 			time: timeout_ms,
 			errors: ['time'],
 		});
-		const userReply = collected.first();
-		if (userReply.content.length > maxLength) {
-			// If the user replied with an excessively long message:
-			await interaction.editReply({ content: overMaxLengthContent });
-			return {
-				responseType: USER_OVER_MAX_LENGTH,
-				botMessage,
-			};
-		}
-		// Successfully collected a valid user reply:
-		return {
-			responseType: USER_REPLY,
-			userReply,
-			botMessage,
-		};
 	}
 	catch (error) {
 		const content = `This '${commandName}' command timed out after ${
@@ -71,13 +57,28 @@ export async function awaitCommandReply({
 		try {
 			// This may error if the bot's reply was deleted:
 			await interaction.editReply({ content });
-			return {
-				responseType: USER_TIMEOUT,
-				botMessage,
-			};
 		}
 		catch (editError) {
 			return { responseType: BOT_MESSAGE_DELETED };
 		}
+		return {
+			responseType: USER_TIMEOUT,
+			botMessage,
+		};
 	}
+	const userReply = collected.first();
+	if (userReply.content.length > maxLength) {
+		// If the user replied with an excessively long message:
+		await interaction.editReply({ content: overMaxLengthContent });
+		return {
+			responseType: USER_OVER_MAX_LENGTH,
+			botMessage,
+		};
+	}
+	// Successfully collected a valid user reply:
+	return {
+		responseType: USER_REPLY,
+		userReply,
+		botMessage,
+	};
 }
