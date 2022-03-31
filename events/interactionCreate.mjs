@@ -15,8 +15,8 @@ export async function execute(interaction) {
 		}
 		catch (error) {
 			console.error(`The "${interaction.commandName}" command failed with the following error:`, error);
-			const content = 'There was an error while executing this command!';
-			return await interaction.reply({ content, ephemeral: true });
+			const content = `There was an error while executing this "${interaction.commandName}" command!`;
+			return await interaction.reply({ content });
 		}
 	}
 }

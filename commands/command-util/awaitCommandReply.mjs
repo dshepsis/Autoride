@@ -37,10 +37,18 @@ export async function awaitCommandReply({
 		botMessage = await interaction.fetchReply();
 	}
 
-	const filter = message => (
-		(botMessage.id === message?.reference?.messageId)
-		&& (allowAnyoneToRespond || (interaction.user.id === message?.author.id))
-	);
+	const filter = message => {
+		if (
+			!allowAnyoneToRespond
+			&& interaction.user.id !== message?.author.id
+		) {
+			const content = `<@${interaction.user.id}> is meant to reply to this command, not you!`;
+			message.reply({ content });
+			return false;
+		}
+		return (botMessage.id === message?.reference?.messageId);
+	};
+
 	let collected;
 	try {
 		collected = await interaction.channel.awaitMessages({

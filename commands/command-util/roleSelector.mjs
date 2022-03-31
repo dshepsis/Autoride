@@ -16,7 +16,7 @@ async function getSelectableRoles({
 			if (roleObjType !== 'object') {
 				throw new Error(`rolesFromInteraction must return an object mapping from role IDs to objects with a name property and an optional message property! Instead found ${roleObjType}.`);
 			}
-			return interactionRoles;
+			return await interactionRoles;
 		}
 	}
 	else if (rolesFromInteraction !== undefined) {
@@ -40,7 +40,7 @@ export function createRoleSelector({
 	// omitted, rolesFromInteraction must be provided instead.
 	roles,
 	// Optional - A function taking an interaction object and returning a roles
-	// object (see above). If omitted, roles must be provided instead.
+	// object Promise (see above). If omitted, roles must be provided instead.
 	rolesFromInteraction,
 	// Optional - True if the returned command should be usable by all users by
 	// default. False if it should be disabled for all users by default.
@@ -67,6 +67,9 @@ export function createRoleSelector({
 
 	// This function is called when a user uses a slash command:
 	async function execute(interaction) {
+		// Defer reply immediately, on the off-chance that getSelectableRoles
+		// takes a long time.
+		await interaction.deferReply({ ephemeral: true });
 		const selectableRoles = await getSelectableRoles({
 			roles,
 			rolesFromInteraction,
@@ -74,7 +77,7 @@ export function createRoleSelector({
 		});
 		if (typeof selectableRoles !== 'object') {
 			const content = `No roles were provided for the ${name} command!`;
-			return interaction.reply({ content, ephemeral: true });
+			return await interaction.editReply({ content });
 		}
 
 		const allRoleIds = Object.keys(selectableRoles);
@@ -82,7 +85,7 @@ export function createRoleSelector({
 		const numRoles = allRoleIds.length;
 		if (numRoles === 0) {
 			const content = `No roles were provided for the ${name} command!`;
-			return interaction.reply({ content, ephemeral: true });
+			return await interaction.editReply({ content });
 		}
 		const numPages = Math.ceil(numRoles / pageSize);
 		if (numPages > MAX_PAGE_SIZE) {
@@ -150,10 +153,9 @@ export function createRoleSelector({
 		// Send the initial reply to the command:
 		{
 			const content = `Choose one of these roles:\n${getCurrentRolesStr()}`;
-			await interaction.reply({
+			await interaction.editReply({
 				content,
 				components: getCurrentComponents(),
-				ephemeral: true,
 			});
 		}
 
@@ -162,12 +164,9 @@ export function createRoleSelector({
 		const selectMessage = await interaction.fetchReply();
 
 		// Create the collector:
-		const filter = selectInteraction => (
-			selectInteraction.user.id === interaction.user.id
-		);
 		const IDLE_TIMEOUT = 30000; // milliseconds
 		const collector = selectMessage.createMessageComponentCollector(
-			{ filter, componentType: 'SELECT_MENU', idle: IDLE_TIMEOUT }
+			{ componentType: 'SELECT_MENU', idle: IDLE_TIMEOUT }
 		);
 
 		// Each time the user makes a selection, assign them the selected role and
@@ -203,12 +202,18 @@ export function createRoleSelector({
 					setOfRoleIdsToSet.delete(roleId);
 				}
 				setOfRoleIdsToSet.add(roleIdToAdd);
-				await userRolesManager.set(Array.from(setOfRoleIdsToSet));
+				try {
+					await userRolesManager.set(Array.from(setOfRoleIdsToSet));
+				}
+				catch (MissingPermissionError) {
+					content = 'Unfortunately, I don\'t have permission to change your role. Please raise my role\'s rank and/or give me the "Manage Roles" permission.';
+					return await selectInteraction.update({ content, components: [] });
+				}
 				const customMessage = selectableRoles[roleIdToAdd].message;
 				content = customMessage ?? `You're now <@&${roleIdToAdd}>!`;
 			}
 			content += ` You can still choose:\n${getCurrentRolesStr()}`;
-			return selectInteraction.update({ content, ephemeral: true });
+			return await selectInteraction.update({ content });
 		});
 
 		// If the collector times-out, edit the original reply to remove the select

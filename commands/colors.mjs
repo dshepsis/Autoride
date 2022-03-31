@@ -8,7 +8,7 @@ export const {
 	name: 'colors',
 	description: 'Select your username color.',
 	async rolesFromInteraction(interaction) {
-		return guildConfig.get(interaction.guildId, 'colorRoles');
+		return await guildConfig.get(interaction.guildId, 'colorRoles');
 	},
 	sortByGuildOrder: true,
 	pageSize: 10,

@@ -16,7 +16,7 @@ export async function execute(interaction) {
 	const query = interaction.options.getString('title');
 	if (query.length > 150) {
 		const content = 'Please use a title parameter shorter than 150 characters.';
-		return interaction.reply({ content });
+		return await interaction.reply({ content });
 	}
 
 	// Use the MediaWiki API to search page titles for the best-matching page:
@@ -28,13 +28,13 @@ export async function execute(interaction) {
 	catch (e) {
 		console.error(e);
 		const content = 'Oops! Looks like the wiki\'s API is down! Try checking the wiki directly: https://okami.speedruns.wiki/';
-		return interaction.reply({ content });
+		return await interaction.reply({ content });
 	}
 	if (response === undefined) {
 		// If no matching pages are found, direct the user to the wiki's search page:
 		const escapedQuery = Util.escapeMarkdown(query).replaceAll('`', '\\`');
 		const content = `Didn't find any pages with titles matching "${escapedQuery}".\nTry this wiki search link instead: https://okami.speedruns.wiki/index.php?search=${encodeURIComponent(query)}`;
-		return interaction.reply({ content });
+		return await interaction.reply({ content });
 	}
 
 	let resolvedTitle = response.title;
@@ -52,5 +52,5 @@ export async function execute(interaction) {
 	// so we do that ourselves to make the URL cleaner:
 	const pagePath = resolvedTitle.replace(/\s/g, '_');
 	const content = `https://okami.speedruns.wiki/${pagePath}`;
-	return interaction.reply({ content });
+	return await interaction.reply({ content });
 }

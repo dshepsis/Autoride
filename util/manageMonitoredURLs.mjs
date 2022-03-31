@@ -114,7 +114,6 @@ export function mergeUrlObj({ target, source } = {}) {
 
 // Adds a new urlObj for this guild, or merges the parameter obj with the
 // existing obj, updating the info and adding any new channels/users:
-// async function addUrlObj(guildId, urlObj) {
 export async function addUrlObjs(guildId, urlObjsToAdd) {
 	const urlObjs = await getUrlObjsForGuild(guildId);
 	for (const urlObjToAdd of urlObjsToAdd) {

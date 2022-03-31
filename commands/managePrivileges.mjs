@@ -5,14 +5,14 @@ import { deployPermissions } from '../util/deploy-permissions.mjs';
 import * as guildConfig from '../util/guildConfig.mjs';
 /** Load privileged roles data from guild-config directory */
 async function getPrivilegedRoles(guildId) {
-	return guildConfig.get(
+	return await guildConfig.get(
 		guildId,
 		'privilegedRoles'
 	);
 }
 /** Write privileged roles data to guild-config directory */
 async function setPrivilegedRoles(guildId, guildPrivilegeLevels) {
-	return guildConfig.set(guildId, 'privilegedRoles', guildPrivilegeLevels);
+	return await guildConfig.set(guildId, 'privilegedRoles', guildPrivilegeLevels);
 }
 
 const ALREADY_ASSOCIATED = Symbol('This role is already associated with this privilege level in this guild.');
@@ -24,7 +24,7 @@ async function associateRoleWithPrivilegeLevel({
 	const guildId = guild.id;
 	const guildPrivilegeLevels = await getPrivilegedRoles(guildId);
 	if (guildPrivilegeLevels === undefined) {
-		return setPrivilegedRoles(guildId, { [privilegeLevelName]: role.id });
+		return await setPrivilegedRoles(guildId, { [privilegeLevelName]: role.id });
 	}
 	if (privilegeLevelName in guildPrivilegeLevels) {
 		return ALREADY_ASSOCIATED;
@@ -42,7 +42,7 @@ async function associateRoleWithPrivilegeLevel({
 		commandNameToId[command.name] = command.id;
 	}
 
-	return deployPermissions({
+	return await deployPermissions({
 		guildId,
 		commandNameToId,
 	});
@@ -76,7 +76,7 @@ async function removeAssociationsFromPrivilegeLevel({
 		commandNameToId[command.name] = command.id;
 	}
 
-	return deployPermissions({
+	return await deployPermissions({
 		guildId,
 		commandNameToId,
 	});
@@ -158,7 +158,7 @@ export async function execute(interaction) {
 		const role = interaction.options.getRole('role');
 		if (role.name === '@everyone') {
 			content = 'You cannot associated the @everyone role with a privilege!';
-			return interaction.reply({ content });
+			return await interaction.reply({ content });
 		}
 		const privilegeLevelName = interaction.options.getString('privilege-level');
 		const result = await associateRoleWithPrivilegeLevel({
@@ -201,5 +201,5 @@ export async function execute(interaction) {
 		const guildId = guild.id;
 		content = await getPrivilegeLevelAssociationsString(guildId);
 	}
-	return interaction.reply({ content });
+	return await interaction.reply({ content });
 }

@@ -188,7 +188,7 @@ export async function reportStatusCodesForGuild(client, guildId) {
 			content: `${mentionPrefix}The following monitored URL(s) return the given errors:\n${errorStr}\n**NOTE**: These URLs won't be checked again until you manually re-enable them using the \`/http-monitor re-enable\` command`,
 		}));
 	}
-	return Promise.all(messagePromises);
+	return await Promise.all(messagePromises);
 }
 
 const MS_PER_MIN = 60 * 1000;
@@ -207,5 +207,5 @@ export async function execute(client) {
 		}
 		reportPromises.push(thisGuildPromise);
 	}
-	return Promise.all(reportPromises);
+	return await Promise.all(reportPromises);
 }

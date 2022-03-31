@@ -15,5 +15,5 @@ export const inDevelopment = true;
 
 export async function execute(interaction) {
 	const content = 'BORK!';
-	return interaction.reply({ content });
+	return await interaction.reply({ content });
 }

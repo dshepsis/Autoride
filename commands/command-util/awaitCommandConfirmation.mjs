@@ -44,7 +44,8 @@ export async function awaitCommandConfirmation({
 	// - LINK, a button that navigates to a URL
 	buttonStyle = 'DANGER',
 	// Optional. Whether the confirmation message should be ephemeral (only
-	// visible to the command user). true by default.
+	// visible to the command user). true by default. This ONLY applies if
+	// messageToReplyTo is not provided
 	ephemeral = true,
 	// Optional. How many milliseconds to wait for the user to press the confirm
 	// or cancel button.
@@ -77,10 +78,14 @@ export async function awaitCommandConfirmation({
 	});
 
 	// Wait for the user to press a button, with the given time limit:
-	const filter = warningInteraction => (
-		[confirmId, cancelId].includes(warningInteraction.customId)
-		&& warningInteraction.user.id === interaction.user.id
-	);
+	const filter = warningInteraction => {
+		if (warningInteraction.user.id !== interaction.user.id) {
+			const content = `These buttons are for <@${interaction.user.id}>, not for you!`;
+			warningInteraction.reply({ content, ephemeral: true });
+			return false;
+		}
+		return [confirmId, cancelId].includes(warningInteraction.customId);
+	};
 	let buttonInteraction;
 	try {
 		buttonInteraction = await warningMessage.awaitMessageComponent(
@@ -93,7 +98,7 @@ export async function awaitCommandConfirmation({
 		const content = `This '${commandName}' command timed out after ${
 			Math.floor(timeout_ms / 1000)
 		} seconds. Please dismiss this message and use the command again if needed.`;
-		await replyTo.editReply({ content, components: [], ephemeral });
+		await replyTo.editReply({ content, components: [] });
 		return {
 			responseType: USER_TIMEOUT,
 			botMessage: warningMessage,
@@ -103,11 +108,7 @@ export async function awaitCommandConfirmation({
 	// User pressed the confirm button:
 	if (buttonInteraction.customId === confirmId) {
 		if (confirmContent !== null) {
-			await replyTo.editReply({
-				content: confirmContent,
-				components: [],
-				ephemeral,
-			});
+			await replyTo.editReply({ content: confirmContent, components: [] });
 		}
 		return {
 			responseType: USER_CONFIRM,
@@ -118,11 +119,7 @@ export async function awaitCommandConfirmation({
 	// User pressed the cancel button:
 	if (buttonInteraction.customId === cancelId) {
 		if (cancelContent !== null) {
-			await replyTo.editReply({
-				content: cancelContent,
-				components: [],
-				ephemeral,
-			});
+			await replyTo.editReply({ content: cancelContent, components: [] });
 		}
 		return {
 			responseType: USER_CANCEL,

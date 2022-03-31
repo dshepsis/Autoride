@@ -70,7 +70,7 @@ export async function execute(interaction) {
 	}
 	if (!anyUrls) {
 		const content = `Reply sent to ${channel}: <${embedMsg.url}>`;
-		return userReply.reply({ content });
+		return await userReply.reply({ content });
 	}
 	// If there were any URLs in the message we just embeded, ask the user if they
 	// want to monitor these URLs.
@@ -91,9 +91,9 @@ export async function execute(interaction) {
 		// If the user pressed the cancel button or let the confirmation dialog
 		// time out, just leave in-place the default replies of
 		// awaitCommandConfirmation.
-		return buttonInteraction;
+		return;
 	}
 	await addUrlObjs(interaction.guildId, urlObjsToAdd);
 	const content = 'All URLs in the embed will be periodically checked for HTTP errors. You can manage this with the `/http-monitor` command.';
-	return buttonInteraction.update({ content, components: [] });
+	return await buttonInteraction.update({ content, components: [] });
 }

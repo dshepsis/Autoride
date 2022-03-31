@@ -10,5 +10,5 @@ export const inDevelopment = true;
 
 export async function execute(interaction) {
 	const content = 'Hacked :D';
-	return interaction.reply({ content });
+	return await interaction.reply({ content });
 }

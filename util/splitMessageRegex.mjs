@@ -25,7 +25,6 @@ export function splitMessageRegex(text, {
 } = {}) {
 	if (text.length <= maxLength) return [text];
 	const parts = [];
-	// let curPart = prepend;
 	let curPart = '';
 	let chunkStartIndex = 0;
 

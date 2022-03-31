@@ -201,7 +201,7 @@ export async function execute(interaction) {
 			const url = interaction.options.getString('url');
 			if (url === null) {
 				const content = 'You must specify a URL to re-enable monitoring for!';
-				return interaction.reply({ content });
+				return await interaction.reply({ content });
 			}
 			const urlObj = await manageUrls.setUrlEnabled({ guildId, url });
 
@@ -210,20 +210,20 @@ export async function execute(interaction) {
 				`The given url ${escapedURL} was not already being monitored. If you want to enable monitoring for it, use the \`/http-monitor add\` subcommand.`
 				: `HTTP error monitoring has been re-enabled for ${escapedURL}.`
 			);
-			return interaction.reply({ content });
+			return await interaction.reply({ content });
 		}
 		// If we're re-enabling a group of URLs:
 		const urlObjFilterFun = filterFuns[scope];
 		if (urlObjFilterFun === undefined) {
 			const content = `Unrecognized scope "${scope}"!`;
-			return interaction.reply({ content });
+			return await interaction.reply({ content });
 		}
 		await manageUrls.setUrlsEnabled({
 			guildId,
 			urlObjFilterFun,
 		});
 		const content = `HTTP error monitoring has been re-enabled for URLs under the scope "${scope}"`;
-		return interaction.reply({ content });
+		return await interaction.reply({ content });
 	}
 	if (subcommandName === 'disable') {
 		// Basically a mirror of the 'enable' subcommand, but with enabled: false
@@ -233,7 +233,7 @@ export async function execute(interaction) {
 			const url = interaction.options.getString('url');
 			if (url === null) {
 				const content = 'You must specify a URL to disable monitoring for!';
-				return interaction.reply({ content });
+				return await interaction.reply({ content });
 			}
 			const urlObj = await manageUrls.setUrlEnabled({
 				guildId,
@@ -245,13 +245,13 @@ export async function execute(interaction) {
 				`The given url ${escapedURL} was not already being monitored, and so can't be temporarily disabled.`
 				: `HTTP error monitoring has been disabled for ${escapedURL}.`
 			);
-			return interaction.reply({ content });
+			return await interaction.reply({ content });
 		}
 		// If we're disabling a group of URLs:
 		const urlObjFilterFun = filterFuns[scope];
 		if (urlObjFilterFun === undefined) {
 			const content = `Unrecognized scope "${scope}"!`;
-			return interaction.reply({ content });
+			return await interaction.reply({ content });
 		}
 		await manageUrls.setUrlsEnabled({
 			guildId,
@@ -259,16 +259,17 @@ export async function execute(interaction) {
 			enabled: false,
 		});
 		const content = `HTTP error monitoring has been disabled for URLs under the scope "${scope}"`;
-		return interaction.reply({ content });
+		return await interaction.reply({ content });
 	}
 	if (subcommandName === 'list') {
+		await interaction.deferReply();
 		const scope = interaction.options.getString('scope');
 		const guild = interaction.guild;
 		if (scope === 'SINGLE URL') {
 			const url = interaction.options.getString('url');
 			if (url === null) {
 				const content = 'You must specify a URL to list information for!';
-				return interaction.reply({ content });
+				return await interaction.editReply({ content });
 			}
 			const urlObj = await manageUrls.getUrlObjByUrl(guildId, url);
 			const escapedURL = '`' + url.replaceAll('`', '\\`') + '`';
@@ -276,13 +277,13 @@ export async function execute(interaction) {
 				`The given url ${escapedURL} is not being monitored.`
 				: await urlObjsToHumanReadableStr([urlObj], guild)
 			);
-			return interaction.reply({ content });
+			return await interaction.editReply({ content });
 		}
 		// If we're listing a group of URLs:
 		const urlObjFilterFun = filterFuns[scope];
 		if (urlObjFilterFun === undefined) {
 			const content = `Unrecognized scope "${scope}"!`;
-			return interaction.reply({ content });
+			return await interaction.editReply({ content });
 		}
 		const allUrlObjs = await manageUrls.getUrlObjsForGuild(guildId);
 		const filteredUrlObjs = (urlObjFilterFun === null ?
@@ -304,12 +305,16 @@ export async function execute(interaction) {
 		// replacement for discord.js.util#splitMessage while it is affected by
 		// https://github.com/discordjs/discord.js/issues/7674
 		const contents = splitMessageRegex(content, { regex: /\n+(?! {4})/g });
-		return paginatedReply({
+		return await paginatedReply({
 			contents,
 			replyable: new Replyable({ interaction }),
+			editReply: true,
 		});
 	}
 	if (subcommandName === 'test') {
+		// Making a lot of HTTPS requests can actually take a long time, so we use
+		// deferReply to give us up to 15 minutes to finish:
+		await interaction.deferReply();
 		const scope = interaction.options.getString('scope');
 		const errorsOnly = interaction.options.getBoolean('errors-only') ?? true;
 		let urlObjsToTest;
@@ -317,7 +322,7 @@ export async function execute(interaction) {
 			const url = interaction.options.getString('url');
 			if (url === null) {
 				const content = 'You must specify a URL to test!';
-				return interaction.reply({ content });
+				return await interaction.reply({ content });
 			}
 			// The getReportStr function accepts plain URL strings as well as urlObjs.
 			// This means we can easily test a URL even if it isn't actually being
@@ -329,7 +334,7 @@ export async function execute(interaction) {
 			const urlObjFilterFun = filterFuns[scope];
 			if (urlObjFilterFun === undefined) {
 				const content = `Unrecognized scope "${scope}"!`;
-				return interaction.reply({ content });
+				return await interaction.reply({ content });
 			}
 			const allUrlObjs = await manageUrls.getUrlObjsForGuild(guildId);
 			urlObjsToTest = (urlObjFilterFun === null ?
@@ -339,11 +344,8 @@ export async function execute(interaction) {
 		}
 		if (urlObjsToTest.length === 0) {
 			const content = `No URLs are being currently monitored under the scope "${scope}".`;
-			return interaction.reply({ content });
+			return await interaction.reply({ content });
 		}
-		// Making a lot of HTTPS requests can actually take a long time, so we use
-		// deferReply to give us up to 15 minutes to finish:
-		await interaction.deferReply({ ephemeral: false });
 		const content = await getReportStr(urlObjsToTest, { errorsOnly });
 
 		// For broader scopes (especially ALL), the resulting response is likely to
@@ -351,7 +353,7 @@ export async function execute(interaction) {
 		// replacement for discord.js.util#splitMessage while it is affected by
 		// https://github.com/discordjs/discord.js/issues/7674
 		const contents = splitMessageRegex(content, { regex: /\n+(?! {4})/g });
-		return paginatedReply({
+		return await paginatedReply({
 			contents,
 			replyable: new Replyable({ interaction }),
 			editReply: true, // Because deferReply was used, editReply has to be used
@@ -383,7 +385,7 @@ export async function execute(interaction) {
 			`HTTP error monitoring was added for ${escapedURL}.`
 			: `HTTP error monitoring was enabled and updated for ${escapedURL}.`
 		);
-		return interaction.reply({ content });
+		return await interaction.reply({ content });
 	}
 	if (subcommandName === 'remove') {
 		const url = interaction.options.getString('url');
@@ -396,7 +398,7 @@ export async function execute(interaction) {
 				`The URL ${escapedURL} is no longer being monitored.`
 				: `The URL ${escapedURL} was already not being monitored. No changes have been made.`
 			);
-			return interaction.reply({ content });
+			return await interaction.reply({ content });
 		}
 
 		// If one of the other degrees are used, first request the existing urlObj
@@ -405,7 +407,7 @@ export async function execute(interaction) {
 		const notifyChannels = currentUrlObj.notifyChannels;
 		if (currentUrlObj === undefined) {
 			const content = `The URL ${escapedURL} was already not being monitored. No changes have been made.`;
-			return interaction.reply({ content });
+			return await interaction.reply({ content });
 		}
 
 		if (degree === 'FOR ME IN THIS CHANNEL') {
@@ -413,7 +415,7 @@ export async function execute(interaction) {
 			const index = userIds.indexOf(userId);
 			if (index === -1) {
 				const content = `You were already not being notified for errors for the URL ${escapedURL} in this channel. No changes have been made.`;
-				return interaction.reply({ content });
+				return await interaction.reply({ content });
 			}
 			// If the user to be removed is the only user being notified in the
 			// channel, remove the notify object for the channel:
@@ -427,7 +429,7 @@ export async function execute(interaction) {
 			}
 			await manageUrls.overwriteUrlObj(guildId, currentUrlObj);
 			const content = `You will no longer be notified of errors for the URL ${escapedURL} in this channel.`;
-			return interaction.reply({ content });
+			return await interaction.reply({ content });
 		}
 
 		if (degree === 'FOR ME IN ALL CHANNELS') {
@@ -452,24 +454,24 @@ export async function execute(interaction) {
 			}
 			if (!anyChanges) {
 				const content = `You were already not being notified for errors for the URL ${escapedURL} in any channels. No changes have been made.`;
-				return interaction.reply({ content });
+				return await interaction.reply({ content });
 			}
 			await manageUrls.overwriteUrlObj(guildId, currentUrlObj);
 			const content = `You will no longer be notified of errors for the URL ${escapedURL} in any channel.`;
-			return interaction.reply({ content });
+			return await interaction.reply({ content });
 		}
 
 		if (degree === 'FOR THIS CHANNEL') {
 			if (!(channelId in notifyChannels)) {
 				const content = `Notifications for errors for the URL ${escapedURL} are already not posted in this channel. No changes have been made.`;
-				return interaction.reply({ content });
+				return await interaction.reply({ content });
 			}
 			delete notifyChannels[channelId];
 			await manageUrls.overwriteUrlObj(guildId, currentUrlObj);
 			const content = `Notifications for errors for the URL ${escapedURL} will no longer be posted in this channel.`;
-			return interaction.reply({ content });
+			return await interaction.reply({ content });
 		}
 	}
 	const content = `Unrecognized sub-command "${subcommandName}".`;
-	return interaction.reply({ content, ephemeral: true });
+	return await interaction.reply({ content });
 }

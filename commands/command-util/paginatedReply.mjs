@@ -4,17 +4,22 @@ export async function paginatedReply({
 	contents,
 	replyable,
 	editReply = false,
+	ephemeral = false,
 } = {}) {
+	console.log('Paginated Reply');
 	const numPages = contents.length;
 	const contentEmbeds = contents.map(
 		str => new MessageEmbed().setDescription(str)
 	);
 	// If there is only one page, do not include the page buttons:
 	if (numPages === 1) {
+		console.log('only one page');
 		if (editReply) {
+			// ephemeral only ever applies to the first reply to an interaction. You
+			// can't change an ephemeral reply to a non-ephemeral one, or vice-versa.
 			return replyable.editReply({ embeds: contentEmbeds });
 		}
-		return replyable.reply({ embeds: contentEmbeds });
+		return replyable.reply({ embeds: contentEmbeds, ephemeral });
 	}
 	let currentPage = 0;
 	const buttonOrder = [
@@ -68,15 +73,11 @@ export async function paginatedReply({
 			`${currentPage + 1} / ${numPages}`
 		);
 		return {
-			embeds: [
-				contentEmbeds[page],
-			],
+			embeds: [contentEmbeds[page]],
 			components: [row],
+			ephemeral,
 		};
 	};
-	if (editReply) {
-		return replyable.editReply({ embeds: contentEmbeds });
-	}
 	const botMessage = await (editReply ?
 		replyable.editReply(getPageResponse(currentPage))
 		: replyable.reply(getPageResponse(currentPage))
@@ -85,15 +86,17 @@ export async function paginatedReply({
 	// getPageResponse or w/e. This should be ez
 
 	const userId = replyable.getUser().id;
-	const filter = buttonInteraction => buttonInteraction.user.id === userId;
 	const collector = botMessage.createMessageComponentCollector({
-		filter,
 		idle: 5 * 60_000,
 	});
-	collector.on('collect', buttonInteraction => {
+	collector.on('collect', async buttonInteraction => {
+		if (buttonInteraction.user.id !== userId) {
+			const content = `These buttons are for <@${userId}>, not for you!`;
+			return await buttonInteraction.reply({ content, ephemeral: true });
+		}
 		const buttonId = buttonInteraction.customId;
 		buttonData[buttonId].press();
-		buttonInteraction.update(getPageResponse(currentPage));
+		await buttonInteraction.update(getPageResponse(currentPage));
 	});
 	collector.on('end', async () => {
 		for (const button of buttonOrder) {

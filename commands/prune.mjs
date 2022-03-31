@@ -24,7 +24,7 @@ export async function execute(interaction) {
 	// Prevent the user from selecting an incorrect number of commands
 	if (amount < 1 || amount > MAX_MESSAGES) {
 		const content = `You must choose a number of messages to delete between 1 and ${MAX_MESSAGES} (inclusive).`;
-		return interaction.reply({ content, ephemeral: true });
+		return await interaction.reply({ content, ephemeral: true });
 	}
 
 	const {
@@ -41,7 +41,7 @@ export async function execute(interaction) {
 		// If the user pressed the cancel button or let the confirmation dialog
 		// time out, just leave in-place the default replies of
 		// awaitCommandConfirmation.
-		return buttonInteraction;
+		return;
 	}
 
 	// If the user confirmed they want to bulk delete messages:
@@ -52,8 +52,12 @@ export async function execute(interaction) {
 	catch (error) {
 		console.error(error);
 		const content = 'There was an error trying to delete messages in this channel!';
-		return buttonInteraction.update({ content, components: [], ephemeral: true });
+		return await buttonInteraction.update(
+			{ content, components: [], ephemeral: true }
+		);
 	}
 	const content = `Successfully deleted \`${messagesDeleted.size}\` messages.`;
-	return buttonInteraction.update({ content, components: [], ephemeral: true });
+	return await buttonInteraction.update(
+		{ content, components: [], ephemeral: true }
+	);
 }

@@ -14,7 +14,7 @@ function getHttpOrHttps(url, callback) {
 	return protocolToGet[protocol](url, callback);
 }
 
-export async function fetchResponse(url) {
+export function fetchResponse(url) {
 	return new Promise((resolve, reject) => {
 		const request = getHttpOrHttps(url, response => {
 			resolve(response);

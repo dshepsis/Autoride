@@ -11,7 +11,7 @@ async function addColorRole(guildId, role, message) {
 		message,
 	};
 	if (guildColorRoles === undefined) {
-		return guildConfig.set(guildId, 'colorRoles', { [role.id]: roleData });
+		return await guildConfig.set(guildId, 'colorRoles', { [role.id]: roleData });
 	}
 	// If the role to be added doesn't have a message, and there is already an
 	// entry for this role in this guild, just return a symbol indicating that
@@ -22,7 +22,7 @@ async function addColorRole(guildId, role, message) {
 	// If this role isn't already tagged as a color role, or if a new message was
 	// included, add an entry, or update the existing one respectively.
 	guildColorRoles[role.id] = roleData;
-	return guildConfig.set(guildId, 'colorRoles', guildColorRoles);
+	return await guildConfig.set(guildId, 'colorRoles', guildColorRoles);
 }
 
 const NOT_PRESENT = Symbol('Color role is not present in this guild.');
@@ -36,7 +36,7 @@ async function removeColorRole(guildId, role) {
 		return NOT_PRESENT;
 	}
 	delete guildColorRoles[role.id];
-	return guildConfig.set(guildId, 'colorRoles', guildColorRoles);
+	return await guildConfig.set(guildId, 'colorRoles', guildColorRoles);
 }
 
 async function getColorRolesStr(interaction) {
@@ -112,7 +112,7 @@ export async function execute(interaction) {
 				content = `Failed to add ${role} to the list of color roles.`;
 			}
 		}
-		return interaction.reply({ content });
+		return await interaction.reply({ content });
 	}
 	if (subcommandName === 'remove') {
 		const role = interaction.options.getRole('role');
@@ -126,16 +126,16 @@ export async function execute(interaction) {
 		else {
 			content = `Failed to remove ${role} from the list of color roles.`;
 		}
-		return interaction.reply({ content });
+		return await interaction.reply({ content });
 	}
 	if (subcommandName === 'list') {
 		const roleStr = await getColorRolesStr(interaction);
 		if (roleStr === NO_ROLES) {
 			content = 'This server has no color roles. Try using `/manage-colors add` to add some!';
-			return interaction.reply({ content });
+			return await interaction.reply({ content });
 		}
 		const header = '__**Role - Message**__\n';
-		return splitReplyInteraction(
+		return await splitReplyInteraction(
 			interaction,
 			`This server's color roles are:\n${header}${roleStr}`,
 			{ prepend: `More color roles:\n${header}` });

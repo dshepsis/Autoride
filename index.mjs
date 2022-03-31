@@ -43,14 +43,19 @@ const timeoutIds = [];
 
 // Whether to run every routine immediately when the bot logs in, or whether
 // to wait for each one's timeout first:
-const RUN_ON_STARTUP = true;
+const RUN_ON_STARTUP = false;
 let index = 0;
 for (const routine of routines) {
 	const loopTimeout = async () => {
 		console.log(`Running routine "${routine.name}"`);
-		await routine.execute(client);
+		try {
+			await routine.execute(client);
+		}
+		catch (RoutineError) {
+			console.error(`Routine "${routine.name}" failed with the following error, and was disabled. Restart index.mjs to run this routine again:`, RoutineError);
+			return;
+		}
 		console.log(`Routine "${routine.name}" completed.`);
-
 		timeoutIds[index] = setTimeout(loopTimeout, routine.interval_ms);
 	};
 	if (RUN_ON_STARTUP) {

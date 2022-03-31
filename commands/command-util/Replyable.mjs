@@ -27,13 +27,13 @@ export class Replyable {
 			return this.#sentReply;
 		}
 		await this.#interaction.reply(messageOptions);
-		return this.#interaction.fetchReply();
+		return await this.#interaction.fetchReply();
 	}
 	async editReply(messageOptions) {
 		if (this.#useMessage) {
-			return this.#sentReply.edit(messageOptions);
+			return await this.#sentReply.edit(messageOptions);
 		}
-		return this.#interaction.editReply(messageOptions);
+		return await this.#interaction.editReply(messageOptions);
 	}
 	getUser() {
 		if (this.#useMessage) {
