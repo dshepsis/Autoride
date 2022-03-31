@@ -13,20 +13,54 @@ function getHttpOrHttps(url, callback) {
 	}
 	return protocolToGet[protocol](url, callback);
 }
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(() => resolve(), ms));
+}
 
-export function fetchResponse(url) {
-	return new Promise((resolve, reject) => {
-		const request = getHttpOrHttps(url, response => {
-			resolve(response);
-		});
-		if (request === null) {
-			reject('Invalid protocol');
+function retriableRequest(url, onResponse, onError, {
+	retryOnECONNRESET = false,
+	numRetries = 0,
+	maxRetries = 15,
+	retryDelayFactorMS = 50,
+	retryDelayExponentialBase = 1.5,
+} = {}) {
+	const req = getHttpOrHttps(url, onResponse);
+	if (req === null) {
+		onError('Invalid protocol');
+	}
+	if (!retryOnECONNRESET) {
+		req.on('error', onError);
+		return;
+	}
+	req.on('error', async err => {
+		// Check if retry is needed
+		if (req.reusedSocket && err.code === 'ECONNRESET') {
+			await sleep(retryDelayFactorMS * retryDelayExponentialBase ** numRetries);
+			++numRetries;
+			retriableRequest(url, onResponse, onError, {
+				retryOnECONNRESET: retryOnECONNRESET || numRetries < maxRetries,
+				numRetries,
+				maxRetries,
+				retryDelayFactorMS,
+				retryDelayExponentialBase,
+			});
 		}
+		onError(err);
+	});
+}
 
-		// The request can error if there is no response from the server, or for
-		// other reasons, such as the protocol not being 'https':
-		request.on('error', httpsError => {
-			reject(httpsError);
+export function fetchResponse(url, {
+	retryOnECONNRESET = false,
+	maxRetries = 15,
+	retryDelayFactorMS = 50,
+	retryDelayExponentialBase = 1.5,
+} = {}) {
+	return new Promise((resolve, reject) => {
+		retriableRequest(url, resolve, reject, {
+			retryOnECONNRESET,
+			maxRetries,
+			retryDelayFactorMS,
+			retryDelayExponentialBase,
 		});
 	});
 }

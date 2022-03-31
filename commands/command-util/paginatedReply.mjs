@@ -6,14 +6,12 @@ export async function paginatedReply({
 	editReply = false,
 	ephemeral = false,
 } = {}) {
-	console.log('Paginated Reply');
 	const numPages = contents.length;
 	const contentEmbeds = contents.map(
 		str => new MessageEmbed().setDescription(str)
 	);
 	// If there is only one page, do not include the page buttons:
 	if (numPages === 1) {
-		console.log('only one page');
 		if (editReply) {
 			// ephemeral only ever applies to the first reply to an interaction. You
 			// can't change an ephemeral reply to a non-ephemeral one, or vice-versa.
