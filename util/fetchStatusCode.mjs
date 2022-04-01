@@ -37,6 +37,7 @@ function retriableRequest(url, onResponse, onError, {
 		if (req.reusedSocket && err.code === 'ECONNRESET') {
 			await sleep(retryDelayFactorMS * retryDelayExponentialBase ** numRetries);
 			++numRetries;
+			console.warn(`Retrying network request to ${url} due to ECONNRESET at ${Date()} (attempt ${numRetries})...`);
 			retriableRequest(url, onResponse, onError, {
 				retryOnECONNRESET: retryOnECONNRESET || numRetries < maxRetries,
 				numRetries,
@@ -45,7 +46,10 @@ function retriableRequest(url, onResponse, onError, {
 				retryDelayExponentialBase,
 			});
 		}
-		onError(err);
+		// If no retry is necessary, simply call the error callback directly:
+		else {
+			onError(err);
+		}
 	});
 }
 

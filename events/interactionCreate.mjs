@@ -14,9 +14,14 @@ export async function execute(interaction) {
 			return await command.execute(interaction);
 		}
 		catch (error) {
-			console.error(`The "${interaction.commandName}" command failed with the following error:`, error);
+			console.error(`The "${interaction.commandName}" command failed at ${Date()} with the following error:`, error);
 			const content = `There was an error while executing this "${interaction.commandName}" command!`;
-			return await interaction.reply({ content });
+			try {
+				return await interaction.reply({ content });
+			}
+			catch (reportErrorToUserError) {
+				console.error(`Sending an error reply for the "${interaction.commandName}" command also failed at ${Date()}...`, reportErrorToUserError);
+			}
 		}
 	}
 }
