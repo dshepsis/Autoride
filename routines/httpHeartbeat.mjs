@@ -1,7 +1,7 @@
 import { testUrl } from '../util/fetchUtils.mjs';
 
-import { pkgRelPath } from './util/pkgRelPath.mjs';
-import { importJSON } from './util/importJSON.mjs';
+import { pkgRelPath } from '../util/pkgRelPath.mjs';
+import { importJSON } from '../util/importJSON.mjs';
 const { heartbeatURL } = await importJSON(pkgRelPath('./config.json'));
 
 // Sends a heartbeat HTTP request to a desired URL every 5 minutes
