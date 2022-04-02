@@ -1,6 +1,6 @@
 export const name = 'interactionCreate';
 export async function execute(interaction) {
-	console.log(`${interaction.user.tag} in guild "${interaction.guild.name}" #${interaction.channel.name} triggered an interaction.`);
+	console.log(`${interaction.user.tag} in guild "${interaction.guild.name}" #${interaction.channel.name} triggered an interaction at ${Date()}.`);
 
 	// Handle regular slash commands:
 	if (interaction.isCommand()) {

@@ -45,7 +45,7 @@ const rest = new REST({ version: '9' }).setToken(token);
 
 async function deployCommandsToGuild(guildId, guildCommandData) {
 	let response;
-	console.log(`Registering application commands for guild ${guildId}...`);
+	console.log(`Registering application commands for guild ${guildId}  at ${Date()} ...`);
 	try {
 		response = await rest.put(
 			Routes.applicationGuildCommands(clientId, guildId),
@@ -53,11 +53,11 @@ async function deployCommandsToGuild(guildId, guildCommandData) {
 		);
 	}
 	catch (GuildCommandError) {
-		console.error('Failed to deploy commands. Please see this error message:', GuildCommandError);
+		console.error(`Failed to deploy commands at ${Date()}. Please see this error message:`, GuildCommandError);
 	}
-	console.log('Successfully registered application commands.');
+	console.log(`Successfully registered application commands at ${Date()}.`);
 
-	console.log(`Applying application command permission overwrites for guild ${guildId}...`);
+	console.log(`Applying application command permission overwrites for guild ${guildId} at ${Date()} ...`);
 	const commandNameToId = Object.create(null);
 	for (const command of response) {
 		commandNameToId[command.name] = command.id;
@@ -71,9 +71,9 @@ async function deployCommandsToGuild(guildId, guildCommandData) {
 		});
 	}
 	catch (PermissionError) {
-		console.error('Failed to apply permission overwrites. This guild may have been deleted. Please see this error message: ', PermissionError);
+		console.error(`Failed to apply permission overwrites at ${Date()}. This guild may have been deleted. Please see this error message: `, PermissionError);
 	}
-	console.log('Successfully applied permission overwrites.');
+	console.log(`Successfully applied permission overwrites at ${Date()}.`);
 }
 await deployCommandsToGuild(developmentGuildId, developmentCommandData);
 for (const guildId of guildIds) {

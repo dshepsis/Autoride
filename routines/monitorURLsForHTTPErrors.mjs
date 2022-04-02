@@ -7,7 +7,7 @@ async function sendMessageToGuildChannel({
 	content,
 } = {}) {
 	const channel = await guild.channels.fetch(channelId);
-	return channel.send({ content });
+	return await channel.send({ content });
 }
 
 /**
@@ -188,7 +188,14 @@ export async function reportStatusCodesForGuild(client, guildId) {
 			content: `${mentionPrefix}The following monitored URL(s) return the given errors:\n${errorStr}\n**NOTE**: These URLs won't be checked again until you manually re-enable them using the \`/http-monitor re-enable\` command`,
 		}));
 	}
-	return await Promise.all(messagePromises);
+	const messageResults = await Promise.allSettled(messagePromises);
+	for (const result of messageResults) {
+		if (result.status === 'fulfilled') {
+			continue;
+		}
+		console.log(`reportStatusCodesForGuild failed to send a message in guild ${guildId} at ${Date()}.`);
+	}
+	return;
 }
 
 const MS_PER_MIN = 60 * 1000;

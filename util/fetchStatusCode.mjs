@@ -21,8 +21,8 @@ function retriableRequest(url, onResponse, onError, {
 	retryOnECONNRESET = false,
 	numRetries = 0,
 	maxRetries = 15,
-	retryDelayFactorMS = 50,
-	retryDelayExponentialBase = 1.5,
+	retryDelayFactorMS = 100,
+	retryDelayExponentialBase = 2,
 } = {}) {
 	const req = getHttpOrHttps(url, onResponse);
 	if (req === null) {
@@ -34,10 +34,11 @@ function retriableRequest(url, onResponse, onError, {
 	}
 	req.on('error', async err => {
 		// Check if retry is needed
-		if (req.reusedSocket && err.code === 'ECONNRESET') {
+		// if (req.reusedSocket && err.code === 'ECONNRESET') {
+		if (err.code === 'ECONNRESET') {
 			await sleep(retryDelayFactorMS * retryDelayExponentialBase ** numRetries);
 			++numRetries;
-			console.warn(`Retrying network request to ${url} due to ECONNRESET at ${Date()} (attempt ${numRetries})...`);
+			console.error(`Retrying network request to ${url} due to ECONNRESET at ${Date()} (attempt ${numRetries})...`);
 			retriableRequest(url, onResponse, onError, {
 				retryOnECONNRESET: retryOnECONNRESET || numRetries < maxRetries,
 				numRetries,
@@ -56,8 +57,8 @@ function retriableRequest(url, onResponse, onError, {
 export function fetchResponse(url, {
 	retryOnECONNRESET = false,
 	maxRetries = 15,
-	retryDelayFactorMS = 50,
-	retryDelayExponentialBase = 1.5,
+	retryDelayFactorMS = 100,
+	retryDelayExponentialBase = 2,
 } = {}) {
 	return new Promise((resolve, reject) => {
 		retriableRequest(url, resolve, reject, {

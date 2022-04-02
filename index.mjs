@@ -7,7 +7,12 @@ import { pkgRelPath } from './util/pkgRelPath.mjs';
 import { importJSON } from './util/importJSON.mjs';
 const { token } = await importJSON(pkgRelPath('./config.json'));
 
-const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
+const client = new Client({
+	intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES],
+	// To hopefully reduce AbortError: The user aborted a request:
+	restRequestTimeout: 60_000,
+	retryLimit: 5,
+});
 
 // Import each command module and save it to a collection
 client.commands = new Collection();
@@ -47,15 +52,15 @@ const RUN_ON_STARTUP = false;
 let index = 0;
 for (const routine of routines) {
 	const loopTimeout = async () => {
-		console.log(`Running routine "${routine.name}"`);
+		console.log(`Running routine "${routine.name}" at ${Date()}`);
 		try {
 			await routine.execute(client);
 		}
 		catch (RoutineError) {
-			console.error(`Routine "${routine.name}" failed with the following error, and was disabled. Restart index.mjs to run this routine again:`, RoutineError);
+			console.error(`Routine "${routine.name}" failed at ${Date()} with the following error, and was disabled. Restart index.mjs to run this routine again:`, RoutineError);
 			return;
 		}
-		console.log(`Routine "${routine.name}" completed.`);
+		console.log(`Routine "${routine.name}" completed at ${Date()}.`);
 		timeoutIds[index] = setTimeout(loopTimeout, routine.interval_ms);
 	};
 	if (RUN_ON_STARTUP) {
