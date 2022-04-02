@@ -3,7 +3,6 @@ import { Client, Collection, Intents } from 'discord.js';
 import { importDir } from './util/importDir.mjs';
 
 import { pkgRelPath } from './util/pkgRelPath.mjs';
-
 import { importJSON } from './util/importJSON.mjs';
 const { token } = await importJSON(pkgRelPath('./config.json'));
 
@@ -51,12 +50,17 @@ const timeoutIds = [];
 const RUN_ON_STARTUP = false;
 let index = 0;
 for (const routine of routines) {
+	if (routine.enabled !== undefined && !routine.enabled) {
+		continue;
+	}
 	const loopTimeout = async () => {
 		console.log(`Running routine "${routine.name}" at ${Date()}`);
 		try {
 			await routine.execute(client);
 		}
 		catch (RoutineError) {
+			// If a routine has an error, all we need to do to temporarily disable it
+			// is to return without calling setTimeout again:
 			console.error(`Routine "${routine.name}" failed at ${Date()} with the following error, and was disabled. Restart index.mjs to run this routine again:`, RoutineError);
 			return;
 		}

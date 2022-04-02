@@ -159,10 +159,16 @@ export async function setUrlEnabled({
 // either enabled or disabled (enabled by default).
 export async function setUrlsEnabled({
 	guildId,
+	urlObjs,
 	urlObjFilterFun = null,
 	enabled = true,
 } = {}) {
-	const urlObjs = await getUrlObjsForGuild(guildId);
+	const allUrlObjs = await getUrlObjsForGuild(guildId);
+
+	// If an array of urlObjs was not provided, just use all of them for the
+	// given guild:
+	urlObjs ??= allUrlObjs;
+
 	// If the filter function is null, don't filter:
 	const selectedUrlObjs = ((urlObjFilterFun === null) ?
 		urlObjs
@@ -171,7 +177,7 @@ export async function setUrlsEnabled({
 	for (const selectedUrlObj of selectedUrlObjs) {
 		selectedUrlObj.enabled = enabled;
 	}
-	await setMonitoredURLs(guildId, urlObjs);
+	await setMonitoredURLs(guildId, allUrlObjs);
 	return selectedUrlObjs;
 }
 

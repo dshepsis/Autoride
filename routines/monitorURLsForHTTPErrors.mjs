@@ -1,4 +1,4 @@
-import { fetchResponseChain, testUrl } from '../util/fetchStatusCode.mjs';
+import { fetchResponseChain, testUrl } from '../util/fetchUtils.mjs';
 import { getEnabledUrlObjsForGuild, setUrlsEnabled } from '../util/manageMonitoredURLs.mjs';
 
 async function sendMessageToGuildChannel({
@@ -38,16 +38,23 @@ async function sendMessageToGuildChannel({
  * @param {boolean} [options.errorsOnly=false] If true, include lines only for
  * urls which result in an error. Otherwise, include a line for all urls. If
  * true and no urls result in an error, a special-case message is returned.
+ * @param {boolean} [options.returnEmptyStringIfNoErrors=false] If true, returns
+ * an empty string when no urlObjs are given, or when none of the tested URLs
+ * result in errors.
  * @returns {Promise<string>} A string message with a human-readable line for
  * each urlObj giving information about the response received from that url.
  */
-export async function getReportStr(urlObjs, { errorsOnly = false } = {}) {
+export async function getReportStr(urlObjs, {
+	errorsOnly = false,
+	returnEmptyStringIfNoErrors = false,
+} = {}) {
 	if (urlObjs.length === 0) {
-		return 'No URLs were given to be tested';
+		return returnEmptyStringIfNoErrors ? '' : 'No URLs were given to be tested';
 	}
 	const urls = urlObjs.map(o => (typeof o === 'string') ? o : o.url);
 	const testResults = await Promise.all(urls.map(testUrl));
 
+	let anyErrors = false;
 	const outLines = [];
 
 	for (const result of testResults) {
@@ -72,11 +79,16 @@ export async function getReportStr(urlObjs, { errorsOnly = false } = {}) {
 		}
 		else if (result.endStatusCode) {
 			line += `results in an HTTP ${result.endStatusCode} error.`;
+			anyErrors = true;
 		}
 		else {
 			line += `results in a "${result.nodeError}" Node request error.`;
+			anyErrors = true;
 		}
 		outLines.push(line);
+	}
+	if (returnEmptyStringIfNoErrors && !anyErrors) {
+		return '';
 	}
 	if (outLines.length === 0) {
 		return 'No HTTP errors were found for any of the given URLs';
@@ -99,16 +111,18 @@ export async function reportStatusCodesForGuild(client, guildId) {
 	const errorsPerChannel = Object.create(null);
 	let anyErrors = false;
 
-	const urlsToDisableSet = new Set();
+	// const urlsToDisableSet = new Set();
+	const urlObjsToDisable = [];
 
 	for (let i = 0, len = responseChains.length; i < len; ++i) {
 		const chain = responseChains[i];
 		const url = urls[i];
+		const urlObj = urlObjs[i];
+
 		const chainLen = chain.length;
 		const endResponse = chain[chainLen - 1];
 
 		let errorDescription;
-
 		const httpResponseCode = endResponse.result;
 		// An OK HTTP response, indicating the final result is valid:
 		if (httpResponseCode === 200) {
@@ -128,10 +142,11 @@ export async function reportStatusCodesForGuild(client, guildId) {
 
 		// Prevent this URL from being checked for errors again until it is
 		// re-enabled via the /http-monitor re-enable command:
-		urlsToDisableSet.add(url);
+		// urlsToDisableSet.add(url);
+		urlObjsToDisable.push(urlObj);
 
 		anyErrors = true;
-		const urlObj = urlObjs[i];
+		// const urlObj = urlObjs[i];
 		const notifyChannels = urlObj.notifyChannels;
 
 
@@ -159,9 +174,7 @@ export async function reportStatusCodesForGuild(client, guildId) {
 	// via the /http-monitor re-enable command:
 	await setUrlsEnabled({
 		guildId,
-		urlObjFilterFun(urlObjToDisable) {
-			return urlsToDisableSet.has(urlObjToDisable.url);
-		},
+		urlObjs: urlObjsToDisable,
 		enabled: false,
 	});
 
