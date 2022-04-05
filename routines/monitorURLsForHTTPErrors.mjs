@@ -111,7 +111,6 @@ export async function reportStatusCodesForGuild(client, guildId) {
 	const errorsPerChannel = Object.create(null);
 	let anyErrors = false;
 
-	// const urlsToDisableSet = new Set();
 	const urlObjsToDisable = [];
 
 	for (let i = 0, len = responseChains.length; i < len; ++i) {
@@ -142,11 +141,9 @@ export async function reportStatusCodesForGuild(client, guildId) {
 
 		// Prevent this URL from being checked for errors again until it is
 		// re-enabled via the /http-monitor re-enable command:
-		// urlsToDisableSet.add(url);
 		urlObjsToDisable.push(urlObj);
 
 		anyErrors = true;
-		// const urlObj = urlObjs[i];
 		const notifyChannels = urlObj.notifyChannels;
 
 
@@ -206,7 +203,7 @@ export async function reportStatusCodesForGuild(client, guildId) {
 		if (result.status === 'fulfilled') {
 			continue;
 		}
-		console.log(`reportStatusCodesForGuild failed to send a message in guild ${guildId} at ${Date()}.`);
+		console.error(`reportStatusCodesForGuild failed to send a message in guild ${guildId} at ${Date()}:\n\t`);
 	}
 	return;
 }
@@ -218,7 +215,13 @@ export async function execute(client) {
 	const guilds = client.guilds;
 	const reportPromises = [];
 	for (const guildId of guilds.cache.keys()) {
-		const thisGuildPromise = reportStatusCodesForGuild(client, guildId);
+		let thisGuildPromise;
+		try {
+			thisGuildPromise = reportStatusCodesForGuild(client, guildId);
+		}
+		catch (error) {
+			console.error(`Failed to routinely report HTTP errors to guild ${guildId} at ${Date()}: `, error);
+		}
 
 		// If this guild didn't have any URLs to monitor, or if none of them gave
 		// errors:

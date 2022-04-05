@@ -1,17 +1,21 @@
 export const name = 'interactionCreate';
 export async function execute(interaction) {
-	console.log(`${interaction.user.tag} in guild "${interaction.guild.name}" #${interaction.channel.name} triggered an interaction at ${Date()}.`);
+	console.log(`${interaction.user.tag} in guild "${interaction.guild.name}" #${interaction.channel.name} triggered a ${interaction.type} interaction at ${Date()}.`);
 
 	// Handle regular slash commands:
 	if (interaction.isCommand()) {
 		const command = interaction.client.commands.get(interaction.commandName);
+		console.log(`Executing ${interaction.commandName} command at ${Date()}.`);
 
 		if (!command) {
+			console.error(`No such command "${interaction.commandName}" found at ${Date()}.`);
 			return;
 		}
 
 		try {
-			return await command.execute(interaction);
+			const commandResult = await command.execute(interaction);
+			console.log(`Succesfully executed ${interaction.commandName} command at ${Date()}`);
+			return commandResult;
 		}
 		catch (error) {
 			console.error(`The "${interaction.commandName}" command failed at ${Date()} with the following error:`, error);

@@ -52,14 +52,31 @@ function retriableRequest(url, onResponse, onError, {
 	});
 }
 
-export function fetchResponse(url, {
+export function fetchInitialResponse(url, {
 	retryOnECONNRESET = false,
 	maxRetries = 15,
 	retryDelayFactorMS = 100,
 	retryDelayExponentialBase = 2,
 } = {}) {
+	const responseHandler = resolve => response => {
+		// Necessary to consume the response stream and allow it to close:
+		// See https://nodejs.org/api/http.html#class-httpclientrequest from "If no
+		// response handler is added[...]"
+		response.resume();
+
+		response.on('end', () => {
+			if (!response.complete) {
+				console.error(`The request to ${url} was terminated at ${Date()} while the message was still being sent.`);
+			}
+		});
+
+		// Simply resolve as soon as the initial response is received, and allow the
+		// `end` event handler to run in the background.
+		resolve(response);
+	};
+
 	return new Promise((resolve, reject) => {
-		retriableRequest(url, resolve, reject, {
+		retriableRequest(url, responseHandler(resolve), reject, {
 			retryOnECONNRESET,
 			maxRetries,
 			retryDelayFactorMS,
@@ -113,7 +130,7 @@ export async function fetchResponseChain(url) {
 	let retryCount = 0;
 	try {
 		while (true) {
-			const response = await fetchResponse(url);
+			const response = await fetchInitialResponse(url);
 			const isRedirect = (Math.floor(response.statusCode / 100) === 3);
 			responses.push({
 				url,
@@ -129,7 +146,7 @@ export async function fetchResponseChain(url) {
 					break;
 				}
 				++retryCount;
-				const retryDelayMS = getRetryAfterMS(response);
+				const retryDelayMS = Math.min(100, getRetryAfterMS(response));
 				// If asked to retry after more than 5 minutes, just don't bother and
 				// report the error:
 				if (retryDelayMS > MAX_RETRY_DELAY_MS) {
@@ -226,7 +243,7 @@ export async function testUrl(url) {
 export async function fetchStatusCode(url) {
 	let response;
 	try {
-		response = await fetchResponse(url);
+		response = await fetchInitialResponse(url);
 	}
 	catch (httpsError) {
 		throw httpsError.code;

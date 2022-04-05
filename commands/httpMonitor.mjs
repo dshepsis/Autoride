@@ -304,7 +304,7 @@ export async function execute(interaction) {
 		// exceed the character limit, so we use splitMessageRegex. This is my
 		// replacement for discord.js.util#splitMessage while it is affected by
 		// https://github.com/discordjs/discord.js/issues/7674
-		const contents = splitMessageRegex(content, { regex: /\n+(?! {4})/g });
+		const contents = splitMessageRegex(content, { regex: /\n+(?!└)/g });
 		return await paginatedReply({
 			contents,
 			replyable: new Replyable({ interaction }),
@@ -349,7 +349,7 @@ export async function execute(interaction) {
 		// exceed the character limit, so we use splitMessageRegex. This is my
 		// replacement for discord.js.util#splitMessage while it is affected by
 		// https://github.com/discordjs/discord.js/issues/7674
-		const contents = splitMessageRegex(content, { regex: /\n+(?! {4})/g });
+		const contents = splitMessageRegex(content, { regex: /\n+(?!└)/g });
 		return await paginatedReply({
 			contents,
 			replyable: new Replyable({ interaction }),
