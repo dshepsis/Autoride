@@ -15,6 +15,29 @@ function getHttpOrHttps(url, callback) {
 	return protocolToGet[protocol](url, callback);
 }
 
+/**
+ * Helper function for fetchInitialResponse
+ * @param {string} url The URL to make a request to
+ * @param {function} onResponse A callback called when a response other than a
+ * Node request error is received (HTTP errors like 404 will still get passed to
+ * this callback).
+ * @param {function} onError A callback called when a Node request error is
+ * received.
+ * @param {object} [options]
+ * @param {boolean} [options.retryOnECONNRESET=false] If true, automatically
+ * retry requests which result in ECONNRESET errors (which are usually transient
+ * and just caused by bad request timing). If false, requests are not retried.
+ * @param {number} [options.numRetries=0] The current retry count. Used for the
+ * recursive call.
+ * @param {number} [options.maxRetries=15] The maximum number of attempts to
+ * reconnect to the given URL if an ECONNRESET error occurs.
+ * @param {number} [options.retryDelayFactorMS=100] The base amount of time in
+ * milliseconds to wait between request retries.
+ * @param {number} [options.retryDelayExponentialBase=2] Each time a request is
+ * retried, the next retry must take this many times longer. For a value of 2,
+ * the delay doubles each time (100ms, 200ms, 400ms, etc.).
+ * @returns {void}
+ */
 function retriableRequest(url, onResponse, onError, {
 	retryOnECONNRESET = false,
 	numRetries = 0,
@@ -32,13 +55,12 @@ function retriableRequest(url, onResponse, onError, {
 	}
 	req.on('error', async err => {
 		// Check if retry is needed
-		// if (req.reusedSocket && err.code === 'ECONNRESET') {
 		if (err.code === 'ECONNRESET') {
 			await wait(retryDelayFactorMS * retryDelayExponentialBase ** numRetries);
 			++numRetries;
 			console.error(`Retrying network request to ${url} due to ECONNRESET at ${Date()} (attempt ${numRetries})...`);
 			retriableRequest(url, onResponse, onError, {
-				retryOnECONNRESET: retryOnECONNRESET || numRetries < maxRetries,
+				retryOnECONNRESET: (numRetries < maxRetries),
 				numRetries,
 				maxRetries,
 				retryDelayFactorMS,
@@ -130,7 +152,9 @@ export async function fetchResponseChain(url) {
 	let retryCount = 0;
 	try {
 		while (true) {
-			const response = await fetchInitialResponse(url);
+			const response = await fetchInitialResponse(url, {
+				retryOnECONNRESET: true,
+			});
 			const isRedirect = (Math.floor(response.statusCode / 100) === 3);
 			responses.push({
 				url,
@@ -243,7 +267,9 @@ export async function testUrl(url) {
 export async function fetchStatusCode(url) {
 	let response;
 	try {
-		response = await fetchInitialResponse(url);
+		response = await fetchInitialResponse(url, {
+			retryOnECONNRESET: true,
+		});
 	}
 	catch (httpsError) {
 		throw httpsError.code;
