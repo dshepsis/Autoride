@@ -1,3 +1,5 @@
+import { setTimeout as wait } from 'node:timers/promises';
+
 import { Client, Collection, Intents } from 'discord.js';
 
 import { importDir } from './util/importDir.mjs';
@@ -35,7 +37,29 @@ for (const event of events) {
 // The previous steps were just setup, which didn't actually require the client
 // to be logged in, but for routines, there's no point in starting them before
 // log in, so we await:
-await client.login(token);
+console.log('Attempting to log in...');
+const LOGIN_RETRIES = 5;
+const LOGIN_BASE_DELAY_MS = 100;
+const LOGIN_EXPONENT_BASE = 2;
+let attempts = 0;
+while (true) {
+	try {
+		await client.login(token);
+		break;
+	}
+	catch (HTTPError) {
+		++attempts;
+		if (attempts >= LOGIN_RETRIES) {
+			throw new Error(
+				`Failed to log in after ${attempts} retries`,
+				{ cause: HTTPError },
+			);
+		}
+		console.error(`Login attempt ${attempts} failed. Trying again...`);
+		await wait(LOGIN_BASE_DELAY_MS * LOGIN_EXPONENT_BASE ** (attempts - 1));
+	}
+}
+console.log('Success! Logged in.');
 
 // Get a list of routine modules from the /routines directory. These are
 // basically scripts that run on a set frequency/schedule.
@@ -54,24 +78,25 @@ for (const routine of routines) {
 		continue;
 	}
 	const loopTimeout = async () => {
-		console.log(`Running routine "${routine.name}" at ${Date()}`);
+		console.log(`Running routine "${routine.name}"...`);
 		try {
 			await routine.execute(client);
 		}
 		catch (RoutineError) {
 			// If a routine has an error, all we need to do to temporarily disable it
 			// is to return without calling setTimeout again:
-			console.error(`Routine "${routine.name}" failed at ${Date()} with the following error, and was disabled. Restart index.mjs to run this routine again:`, RoutineError);
+			console.error(`Routine "${routine.name}" failed with the following error, and was disabled. Restart index.mjs to run this routine again:`, RoutineError);
 			return;
 		}
-		console.log(`Routine "${routine.name}" completed at ${Date()}.`);
+		console.log(`Routine "${routine.name}" completed.`);
 		timeoutIds[index] = setTimeout(loopTimeout, routine.interval_ms);
 	};
 	if (RUN_ON_STARTUP) {
 		loopTimeout();
 	}
 	else {
-		timeoutIds[index] = setTimeout(loopTimeout, routine.interval_ms);
+		const initialDelay = routine.initialDelay_ms ?? routine.interval_ms;
+		timeoutIds[index] = setTimeout(loopTimeout, initialDelay);
 	}
 	++index;
 }
