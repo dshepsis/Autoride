@@ -6,7 +6,7 @@
 // to whitelist specific users and roles based on id. For this bot,
 // permissions are managed through a generic privilege system.
 //
-// privilegeLevels.mjs defines a series of generic privilege-levels.
+// privilegeLevels.cjs defines a series of generic privilege-levels.
 // These can be referenced in the .minimumPrivilege property in command module
 // files. Then, in each server the bot operates in, the manage-privileges
 // command is used to assign each privilege level a role. For example,
