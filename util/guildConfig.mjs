@@ -9,13 +9,23 @@ import * as fsp from 'node:fs/promises';
 import * as nodePath from 'node:path';
 import { pkgRelPath } from './pkgRelPath.mjs';
 
+import { ajv } from '../guild-config-schema/schema-util/guildConfigAJV.mjs';
+
 /**
  * Stores a cache of objects parsed from JSON files representing the config data
  * for the given guild and namespace. importJSON.mjs isn't used here, because
  * that module assumes that the underlying file doesn't get mutated
  */
 const objCache = new Map();
-// Cache keys are formed by simple concatenation:
+/**
+ * Returns a key used for adding and getting an entry in the guild config data
+ * cache Map `objCache`.
+ * @param {string} guildId The snowflake for the guild to which the config data
+ * applies
+ * @param {string} namespace The identifier of the particular config data
+ * @returns {string} A key that uniquely identifies the given config data for
+ * the given guild, to be used in the cache.
+ */
 function getCacheKey(guildId, namespace) {
 	return guildId + namespace;
 }
@@ -28,6 +38,7 @@ function getCacheKey(guildId, namespace) {
  * config file is for.
  * @param {string} namespace An identifier signifying what kind of configuration
  * data this config file holds.
+ * @returns {string} The path to where the given config file should go
  */
 function getConfigFilePath(guildId, namespace) {
 	// We have to use string concatenation here instead of just using
@@ -43,6 +54,8 @@ function getConfigFilePath(guildId, namespace) {
  * (where package.json and index.mjs live).
  * @param {string} guildId The discord.js snowflake Id of the guild the given
  * config directory (full of config .json files) is for.
+ * @returns {string} The path to where the given guild's config directory should
+ * go
  */
 function getConfigDirPath(guildId) {
 	const relPathStart = `.${nodePath.sep}`;
@@ -63,7 +76,7 @@ function getConfigDirPath(guildId) {
  * config data has yet been created using the set function of this module.
  * @throws {Error} Throws an error if the content of the corresponding file is
  * not a valid JSON-parseable string. This should only happen if the file was
- * manually edited
+ * manually edited.
  */
 export async function get(guildId, namespace) {
 	const cacheKey = getCacheKey(guildId, namespace);
@@ -106,8 +119,16 @@ export async function get(guildId, namespace) {
  * data this config object holds.
  * @param {object} configObj A JSON-serializable object representing some
  * configuration data for the given guildId and namespace.
+ * @return {Promise<true>}
  */
 export async function set(guildId, namespace, configObj) {
+	// First, validate the given configuration object against the schema for the
+	// given namespace:
+	const validate = ajv.getSchema(namespace);
+	if (!validate(configObj)) {
+		throw new TypeError(`Given configuration object doesn't match the schema for the namespace "${namespace}": ${JSON.stringify(validate.errors, null, 2)}`);
+	}
+
 	const cacheKey = getCacheKey(guildId, namespace);
 	objCache.set(cacheKey, configObj);
 
@@ -124,6 +145,7 @@ export async function set(guildId, namespace, configObj) {
 	}
 	const configDirPath = getConfigDirPath(guildId);
 	const configFilePath = getConfigFilePath(guildId, namespace);
+
 	// In case the requisite folders don't already exist, create them:
 	await fsp.mkdir(configDirPath, { recursive: true });
 
