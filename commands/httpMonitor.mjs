@@ -1,3 +1,7 @@
+// @TODO make it so the re-enable and add subcommands instantly check the
+// given url for http errors. Might need to add a helper function to
+// monitorURLsForHTTPErrors.
+
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { byName } from '../privilegeLevels.mjs';
 import * as manageUrls from '../util/manageMonitoredURLs.mjs';

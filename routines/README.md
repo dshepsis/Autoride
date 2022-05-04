@@ -15,8 +15,3 @@ with other tasks.
 send messages based on its results. 
 * `enabled` (optional) — If undefined or truthy, this routine will be run at the
 specified interval. If falsy, this routine will not be run at all.
-* `initialDelay_ms` (optional) — If not nullish, this will be used as the
-initial `setTimeout` delay before the first time the routine runs upon bot
-startup. Otherwise, `interval_ms` will be used. Setting this to a low value
-(even 0) may be useful for debugging routines that would otherwise have long
-intervals.

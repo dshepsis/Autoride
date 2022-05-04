@@ -1,96 +1,18 @@
 import { get as getHttp } from 'node:http';
 import { get as getHttps } from 'node:https';
 import { setTimeout as wait } from 'node:timers/promises';
-import { lookup as dnsLookup } from 'node:dns';
-import { isIP } from 'node:net';
-import { urlToHttpOptions } from 'node:url';
-
-import ipaddr from 'ipaddr.js';
-
-class LocalIPBlockedError extends Error {
-	name = this.constructor.name;
-	code = 'ENOTFOUND';
-	hostname;
-	constructor(hostname) {
-		super(`IP Address "${hostname}" blocked due to being in range outside unicast.`);
-		this.hostname = hostname;
-	}
-}
-
-/**
- * A function meant to be used as a custom `lookup` function in the options of
- * http(s).request/get. This is used to block requests to local IPs, so as to
- * protect against SSRF (even if that possibility is really slim):
- * @param {string} hostname The request's hostname
- * @param {object} options DNS options object. See:
- * https://nodejs.org/api/dns.html#dnslookuphostname-options-callback
- * @param {function} callback DNS lookup callback. Called normally unless the
- * resolved IP address is outside the unicast range (as determined by ipaddr.js)
- * in which case a custom error is passed.
- */
-function blockLocalLookup(hostname, options, callback) {
-	return dnsLookup(hostname, options, (err, address, family) => {
-		if (err) return callback(err, address, family);
-
-		// Check that the address isn't local:
-		const addressData = ipaddr.parse(address);
-		if (addressData.range() === 'unicast') {
-			return callback(err, address, family);
-		}
-		// If the address is local, make and pass an error:
-		return callback(new LocalIPBlockedError(hostname));
-	});
-}
-
-/** Designed to mimic the return value of http.get. */
-function makeFakeErrorEventEmitter(host) {
-	return {
-		on(eventName, errCallback) {
-			if (eventName !== 'error') {
-				throw new Error('This is a fake event emitter. Please only listen for the "error" event.');
-			}
-			errCallback(new LocalIPBlockedError(host));
-		},
-	};
-}
 
 const protocolToGet = {
 	'http:': getHttp,
 	'https:': getHttps,
 };
-/**
- * Calls http.get or https.get depending on the protocol of the given URL.
- * If the given URL is a local IP, or resolves to a local IP (i.e. not in the
- * unicast IP range), no request to it is made and an error event is emitted.
- * @param {string|URL} url
- * @param {function} callback
- * @returns {ClientRequest|object} If the url is a local IP address, an object
- * with an `on` method which, if called as `on('error', callback)` will call
- * the callback with a LocalIPBlockedError. Otherwise, the ClientRequest object
- * returned by the call to http/https.get.
- */
 function getHttpOrHttps(url, callback) {
-	// Note: url.urlToHttpOptions is used here as it automatically strips the
-	// square brackets [] from IPv6 addresses. This is necessary for net.isIP to
-	// properly recognize the host as an IP address.
-	const parsedUrl = urlToHttpOptions(new URL(url));
-	const host = parsedUrl.hostname;
-
-	// Check if the host is a a local IP address, and provoke an error if so.
-	// This is necesssary because, when the host is an IP, the DNS lookup is
-	// skipped, so we have to block the request before it's even made:
-	// https://github.com/nodejs/node/blob/adaf60240559ffb58636130950262ee3237b7a41/lib/net.js#L1047
-	if (isIP(host) && ipaddr.parse(host).range() !== 'unicase') {
-		return makeFakeErrorEventEmitter(host);
-	}
-	const protocol = parsedUrl.protocol;
+	const protocol = (new URL(url)).protocol;
 	const get = protocolToGet[protocol];
 	if (get === undefined) {
 		return null;
 	}
-	// Prevent requests to local addresses, such as localhost:
-	const options = { lookup: blockLocalLookup };
-	return get(url, options, callback);
+	return protocolToGet[protocol](url, callback);
 }
 
 /**
@@ -126,7 +48,6 @@ function retriableRequest(url, onResponse, onError, {
 	const req = getHttpOrHttps(url, onResponse);
 	if (req === null) {
 		onError('Invalid protocol');
-		return;
 	}
 	if (!retryOnECONNRESET) {
 		req.on('error', onError);
@@ -137,7 +58,7 @@ function retriableRequest(url, onResponse, onError, {
 		if (err.code === 'ECONNRESET') {
 			await wait(retryDelayFactorMS * retryDelayExponentialBase ** numRetries);
 			++numRetries;
-			console.error(`Retrying network request to ${url} due to ECONNRESET at (attempt ${numRetries})...`);
+			console.error(`Retrying network request to ${url} due to ECONNRESET at ${Date()} (attempt ${numRetries})...`);
 			retriableRequest(url, onResponse, onError, {
 				retryOnECONNRESET: (numRetries < maxRetries),
 				numRetries,
@@ -167,7 +88,7 @@ export function fetchInitialResponse(url, {
 
 		response.on('end', () => {
 			if (!response.complete) {
-				console.error(`The request to ${url} was terminate while the message was still being sent.`);
+				console.error(`The request to ${url} was terminated at ${Date()} while the message was still being sent.`);
 			}
 		});
 

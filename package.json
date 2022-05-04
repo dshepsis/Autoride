@@ -5,7 +5,7 @@
   "main": "index.mjs",
   "type": "module",
   "scripts": {
-    "test": "node test.mjs"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
@@ -21,18 +21,15 @@
     "@discordjs/builders": "^0.11.0",
     "@discordjs/rest": "^0.2.0-canary.0",
     "@keyv/sqlite": "^2.1.0",
-    "@mapbox/node-pre-gyp": "^1.0.9",
-    "@twurple/api": "^5.0.18",
-    "@twurple/auth": "^5.0.18",
-    "ajv": "^8.11.0",
+    "@mapbox/node-pre-gyp": "^1.0.8",
     "discord-api-types": "^0.26.1",
     "discord.js": "^13.6.0",
-    "ipaddr.js": "^2.0.1",
+    "keyv": "^4.1.1",
     "sqlite3": "^5.0.2",
     "tar": "^6.1.11",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
-    "eslint": "^8.12.0"
+    "eslint": "^8.10.0"
   }
 }

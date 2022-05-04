@@ -50,7 +50,7 @@ export async function execute(interaction) {
 		messagesDeleted = await interaction.channel.bulkDelete(amount, true);
 	}
 	catch (error) {
-		console.error('Prune command error: ', error);
+		console.error(error);
 		const content = 'There was an error trying to delete messages in this channel!';
 		return await buttonInteraction.update(
 			{ content, components: [], ephemeral: true }

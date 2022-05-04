@@ -26,7 +26,7 @@ export async function execute(interaction) {
 		response = (await fetchJSON(queryURL)).query.search[0];
 	}
 	catch (e) {
-		console.error('Wiki command error: ', e);
+		console.error(e);
 		const content = 'Oops! Looks like the wiki\'s API is down! Try checking the wiki directly: https://okami.speedruns.wiki/';
 		return await interaction.reply({ content });
 	}

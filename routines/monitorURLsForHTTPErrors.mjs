@@ -203,14 +203,14 @@ export async function reportStatusCodesForGuild(client, guildId) {
 		if (result.status === 'fulfilled') {
 			continue;
 		}
-		console.error(`reportStatusCodesForGuild failed to send a message in guild ${guildId}:\n\t`, result.reason);
+		console.error(`reportStatusCodesForGuild failed to send a message in guild ${guildId} at ${Date()}:\n\t`);
 	}
 	return;
 }
 
 const MS_PER_MIN = 60 * 1000;
 export const name = 'monitorURLsForHTTPErrors';
-export const interval_ms = 7 * MS_PER_MIN;
+export const interval_ms = 5 * MS_PER_MIN; // 5 minutes
 export async function execute(client) {
 	const guilds = client.guilds;
 	const reportPromises = [];
@@ -220,7 +220,7 @@ export async function execute(client) {
 			thisGuildPromise = reportStatusCodesForGuild(client, guildId);
 		}
 		catch (error) {
-			console.error(`Failed to routinely report HTTP errors to guild ${guildId}: `, error);
+			console.error(`Failed to routinely report HTTP errors to guild ${guildId} at ${Date()}: `, error);
 		}
 
 		// If this guild didn't have any URLs to monitor, or if none of them gave
