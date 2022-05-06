@@ -19,15 +19,20 @@ export async function execute(interaction) {
 		return await interaction.reply({ content });
 	}
 
+	// For some reason, left angle bracket < in the query causes an
+	// internal_api_error_DBQueryError on the Okami speedrunning wiki, so just
+	// remove all of them to be safe:
+	const sanitizedQueryComponent = encodeURIComponent(query).replaceAll('<', '');
+
 	// Use the MediaWiki API to search page titles for the best-matching page:
-	const queryURL = `${WIKI_API_BASE}action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=1&format=json`;
+	const queryURL = `${WIKI_API_BASE}action=query&list=search&srsearch=${sanitizedQueryComponent}&srlimit=1&format=json`;
 	let response;
 	try {
 		response = (await fetchJSON(queryURL)).query.search[0];
 	}
 	catch (e) {
 		console.error('Wiki command error: ', e);
-		const content = 'Oops! Looks like the wiki\'s API is down! Try checking the wiki directly: https://okami.speedruns.wiki/';
+		const content = 'Oops! Looks like the wiki\'s API is down or gave an error. Try checking the wiki directly: https://okami.speedruns.wiki/';
 		return await interaction.reply({ content });
 	}
 	if (response === undefined) {

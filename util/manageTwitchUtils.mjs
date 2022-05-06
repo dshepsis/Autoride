@@ -374,11 +374,20 @@ export async function getTagsByNames(tagNames, language = 'en-us') {
  * Twitch) to set as required
  * @param {string} [language="en-us"] The IETF Language tag (`en-us` by default)
  * to check the tag names under
- * @return {Promise<void>}
+ * @return {Promise<string[]>} The list of tag names which were found and
+ * followed
  */
 export async function setRequiredTags(guildId, tagNames, language = 'en-us') {
-	const tags = await getTagsByNames(tagNames, language);
 	const guildTwitchConfig = await getTwitchConfig(guildId);
+	// If there are no tags given, just clear the tag list:
+	if (tagNames.length === 0) {
+		guildTwitchConfig.requiredTags = [];
+		await guildConfig.set(guildId, 'twitch', guildTwitchConfig);
+		return Object.keys([]);
+	}
+
+	// V slow async function:
+	const tags = await getTagsByNames(tagNames, language);
 
 	// Change the mapping from tagName->HelixTag to tag.id->tagName since the
 	// other info isn't necessary and this object will be serialized:
@@ -388,6 +397,7 @@ export async function setRequiredTags(guildId, tagNames, language = 'en-us') {
 	}
 	guildTwitchConfig.requiredTags = requiredTags;
 	await guildConfig.set(guildId, 'twitch', guildTwitchConfig);
+	return Object.keys(tags);
 }
 
 

@@ -18,7 +18,7 @@ export async function execute(interaction) {
 			return commandResult;
 		}
 		catch (error) {
-			console.error(`The "${interaction.commandName}" command failed at with the following error:`, error);
+			console.error(`The "${interaction.commandName}" command failed with the following error:`, error);
 			const content = `There was an error while executing this "${interaction.commandName}" command!`;
 			try {
 				return await interaction.reply({ content });
