@@ -11,9 +11,13 @@ import { AsyncCache } from './AsyncCache.mjs';
 
 import { pkgRelPath } from './pkgRelPath.mjs';
 import { importJSON } from './importJSON.mjs';
-const { twitch: twitchCredentials, guildIds: allGuildIds } = await importJSON(
-	pkgRelPath('./config.json')
-);
+const {
+	twitch: twitchCredentials,
+	guildIds: configGuildIds,
+	developmentGuildId,
+} = await importJSON(pkgRelPath('./config.json'));
+const allGuildIds = [developmentGuildId];
+allGuildIds.push(...configGuildIds);
 
 /**
  * Types:
@@ -94,9 +98,9 @@ export async function makeStreamEmbed(stream) {
  * @returns {Promise<HelixStream|null>} The stream object, or `null` if the user
  * is not live.
  */
-// export async function getUserStream(username) {
-// 	return await twitchClient.streams.getStreamByUserName(username);
-// }
+export async function getUserStream(username) {
+	return await twitchClient.streams.getStreamByUserName(username);
+}
 
 /**
  * Gets the Twitch API game data for a given game name
@@ -130,6 +134,23 @@ export async function getUserByName(userName) {
 export async function setStreamsChannel(guildId, channelId) {
 	const guildTwitchConfig = await getTwitchConfig(guildId);
 	guildTwitchConfig.streamsChannel = channelId;
+	await guildConfig.set(guildId, 'twitch', guildTwitchConfig);
+}
+
+/**
+ * Resets the twitch config fields which store data related to currently live
+ * streams. This means that the bot will forget about messages it has already
+ * posted and post them again the next time the monitorTwitchStreams routine
+ * runs. This can be useful if those messages were deleted and you want them to
+ * be posted again sooner.
+ * @param {string} guildId The snowflake of the Discord guild to clear
+ * @returns {Promise<void>}
+ */
+export async function clearStreamData(guildId) {
+	const guildTwitchConfig = await getTwitchConfig(guildId);
+	guildTwitchConfig.streamsChannelMessages = {};
+	guildTwitchConfig.singleStreamMessages = {};
+	guildTwitchConfig.singleStreamBlockedUsers = {};
 	await guildConfig.set(guildId, 'twitch', guildTwitchConfig);
 }
 
@@ -260,6 +281,9 @@ export const USER_NOT_FOLLOWED = Symbol('User was already not being followed.');
  * corresponding to the result of attempting to unfollow the user.
  */
 export async function unfollowUser(guildId, userName) {
+	// Usernames should always be lowercase, whereas displayNames contain the
+	// capitalization:
+	userName = userName.toLocaleLowerCase();
 	const guildTwitchConfig = await getTwitchConfig(guildId);
 	const guildFollowedUsers = guildTwitchConfig.followedUsers;
 	if (userName in guildFollowedUsers) {
@@ -331,7 +355,7 @@ export async function getFollowedUserNames(guildId) {
 export async function getBlockedUserNames(guildId) {
 	const guildTwitchConfig = await getTwitchConfig(guildId);
 	const blocked = Object.keys(guildTwitchConfig.blockedUsers);
-	blocked.push(...Object.keys(guildTwitchConfig.guildSingleStreamBlocked));
+	blocked.push(...Object.keys(guildTwitchConfig.singleStreamBlockedUsers));
 	return blocked;
 }
 
@@ -381,7 +405,7 @@ export async function setRequiredTags(guildId, tagNames, language = 'en-us') {
 	const guildTwitchConfig = await getTwitchConfig(guildId);
 	// If there are no tags given, just clear the tag list:
 	if (tagNames.length === 0) {
-		guildTwitchConfig.requiredTags = [];
+		guildTwitchConfig.requiredTags = {};
 		await guildConfig.set(guildId, 'twitch', guildTwitchConfig);
 		return Object.keys([]);
 	}
@@ -420,8 +444,9 @@ export async function getRequiredTagNames(guildId) {
  * given message will be deleted.
  * @param {HelixStream} stream The currently live stream to monitor.
  * @param {Message} message The message to delete when the stream is offline.
- * @param {object} guildTwitchConfig The Twitch config object for the guild
- * that the message was sent to:
+ * @param {object} [guildTwitchConfig] Optional. The Twitch config object for
+ * the guild that the message was sent to. If omitted, the twitch config for the
+ * guild the message is in will be retrieved and used.
  * @return {Promise<void>}
  */
 export async function monitorStreamMessage(stream, message, guildTwitchConfig) {
@@ -480,8 +505,8 @@ async function* getStreamsManyIds(idArr, idType) {
  * containing the message
  * @param {string} messageId The snowflake of the message to edit
  * @param {HelixStream} stream The HelixStream to based the updated message on
- * @param {object} [guildTwitchConfig] The Twitch config object for the guild
- * that the message is in.
+ * @param {TwitchConfig} guildTwitchConfig The Twitch config object for the
+ * guild that the message is in.
  * @returns {Promise<boolean>} Returns true if the message was successfully
  * edited, false if the edit failed (e.g. if the message was already deleted)
  */
@@ -521,24 +546,15 @@ async function updateStreamMessage(
 		}
 	}
 	// If the message was successfully edited, update its values in the config:
-	if (channelId === guildTwitchConfig.streamsChannel) {
-		const messageData = guildTwitchConfig.streamsChannelMessages[userId];
-		messageData.title = title;
-		messageData.gameId = gameId;
-		return true;
-	}
-	// If the message is in some other channel, it must have been a single-
-	// stream message, in which case we should search for the config entry
-	// for it and update it.
-	const messagesForUser = guildTwitchConfig.singleStreamMessages[userId];
-	for (const messageData of messagesForUser) {
-		if (messageData.message !== messageId) {
-			continue;
-		}
-		messageData.title = title;
-		messageData.gameId = gameId;
-		return true;
-	}
+	const messageData = (
+		guildTwitchConfig.streamsChannelMessages[userId]
+		?? guildTwitchConfig.singleStreamMessages[userId].find(
+			singleStreamMessage => singleStreamMessage.message === messageId
+		)
+	);
+	messageData.title = title;
+	messageData.gameId = gameId;
+	return true;
 }
 
 /**
@@ -546,9 +562,9 @@ async function updateStreamMessage(
  * @param {BaseGuildTextChannel} streamsChannelAPI The discord.js channel object
  * for the streamsChannel, to which to send the message
  * @param {HelixStream} stream The HelixStream to based the stream message on
- * @param {object} guildTwitchConfig The Twitch config object for the guild
- * that the message will be sent in. THIS FUNCTION DOESN'T COMMIT THE CONFIG.
- * YOU MUST USE `guildConfig.set()` SEPARATELY!!
+ * @param {TwitchConfig} guildTwitchConfig The Twitch config object for the
+ * guild that the message will be sent in. THIS FUNCTION DOESN'T COMMIT THE
+ * CONFIG. YOU MUST USE `guildConfig.set()` SEPARATELY!!
  * @returns {Promise<void>}
  */
 async function sendStreamMessage(
@@ -556,20 +572,21 @@ async function sendStreamMessage(
 	stream,
 	guildTwitchConfig,
 ) {
-	// alskjdf;laksjdf UPDATE THIS TO BE MORE LIKE updateStreamMessage
-	const { streamsChannel } = guildTwitchConfig;
+	const { streamsChannel, streamsChannelMessages } = guildTwitchConfig;
 	if (streamsChannelAPI.id !== streamsChannel) {
 		throw new Error('The sendStreamMessage function should only be used to send messages to the streamsChannel');
 	}
 	const embed = await makeStreamEmbed(stream);
-	const botMsg = await streamsChannelAPI.send({ embeds: [embed] });
-	objOfArraysPush(guildTwitchConfig.singleStreamMessages, stream.userId, {
-		channel: streamsChannel,
+
+	const botMsg = await streamsChannelAPI.send({
+		embeds: [embed],
+		allowedMentions: { parse: [] }, // Prevent injection of @mentions
+	});
+	streamsChannelMessages[stream.userId] = {
 		message: botMsg.id,
 		title: stream.title,
 		gameId: stream.gameId,
-	});
-	// await monitorStreamMessage(stream, botMsg, guildTwitchConfig);
+	};
 }
 
 /**
@@ -580,30 +597,39 @@ async function sendStreamMessage(
  * @param {Map<K,V>} map
  * @param {K} key
  * @param {V} value
+ * @returns {void}
  */
 function mapOfArraysPush(map, key, value) {
 	const arr = map.get(key);
 	if (arr === undefined) {
 		map.set(key, [value]);
+		return;
 	}
 	arr.push(value);
 }
 
 /**
- * A function for adding values to a map-like object which maps from strings to
- * arrays of values. If the key is not yet defined, a new array is automatically
- * created to wrap the value.
- * @template V
- * @param {{ [key: string]: V }} obj
- * @param {string} key
- * @param {V} value
+ * Bulk deletes messages, but catches and ignores the error which gets thrown if
+ * only a single message is given and it does not exist (e.g. it was already
+ * deleted).
+ * @param {BaseGuildTextChannel} channelAPI The d.js channel object containing
+ * the messages to delete
+ * @param {strings[]} messages An array of message snowflakes to delete
+ * @returns {Promise<Collection <Snowflake, Message>>}
  */
-function objOfArraysPush(obj, key, value) {
-	const arr = obj[key];
-	if (arr === undefined) {
-		obj[key] = [value];
+async function safeBulkDelete(channelAPI, messages) {
+	if (messages.length === 1) {
+		try {
+			return await channelAPI.bulkDelete(messages);
+		}
+		catch (messageAlreadyDeletedError) {
+			// bulkDelete uses the normal message-delete endpoint if there is only one
+			// message. Unlike the normal bulkDelete endpoint, this endpoint can throw
+			// an error if the message doesn't exist (e.g. if it was already deleted),
+			// so we catch that specific case and then do nothing.
+		}
 	}
-	arr.push(value);
+	return await channelAPI.bulkDelete(messages);
 }
 
 /**
@@ -613,21 +639,21 @@ function objOfArraysPush(obj, key, value) {
  * guild ids, representing the guilds to check the monitored streams of. By
  * default, this is all guilds listed in the general config.json
  * @returns {Promise<{
- * 	guildTwitchConfigs: Map<string, object>,
+ * 	guildTwitchConfigs: Map<string, TwitchConfig>,
  * 	userIdToStreamMap: Map<string, HelixStream>,
- * 	gameIdToStreamMap: Map<string, HelixStream>,
+ * 	gameIdToStreamsMap: Map<string, HelixStream[]>,
  * }>}
  */
 async function getMonitoredStreams(guildIds = allGuildIds) {
 	/** @type {Map<string, HelixStream>} */
 	const userIdToStreamMap = new Map();
-	/** @type {Map<string, HelixStream>} */
-	const gameIdToStreamMap = new Map();
+	/** @type {Map<string, HelixStream[]>} */
+	const gameIdToStreamsMap = new Map();
 
 	const gameIdsToRequest = new Set();
 	const userIdsToRequest = new Set();
 
-	/** @type {Map<string, object>} */
+	/** @type {Map<string, TwitchConfig>} */
 	const guildTwitchConfigs = new Map();
 
 	// For each guild, get the list of game/user ids to request, so that we can
@@ -662,7 +688,7 @@ async function getMonitoredStreams(guildIds = allGuildIds) {
 	for await (const gameStream of getStreamsManyIds(gameIdsArr, 'game')) {
 		const { userId, gameId } = gameStream;
 		userIdToStreamMap.set(userId, gameStream);
-		gameIdToStreamMap.set(gameId, gameStream);
+		mapOfArraysPush(gameIdToStreamsMap, gameId, gameStream);
 
 		// If a followed game already contains a stream from a followed user, there's
 		// no need to request the stream for that user:
@@ -672,13 +698,13 @@ async function getMonitoredStreams(guildIds = allGuildIds) {
 	const userIdsArr = Array.from(userIdsToRequest);
 	for await (const userStream of getStreamsManyIds(userIdsArr, 'userId')) {
 		userIdToStreamMap.set(userStream.userId, userStream);
-		gameIdToStreamMap.set(userStream.gameId, userStream);
+		mapOfArraysPush(gameIdToStreamsMap, userStream.gameId, userStream);
 	}
 
 	return {
 		guildTwitchConfigs,
 		userIdToStreamMap,
-		gameIdToStreamMap,
+		gameIdToStreamsMap,
 	};
 }
 
@@ -690,13 +716,13 @@ async function getMonitoredStreams(guildIds = allGuildIds) {
  * message send/edit/delete requests
  * @param {string} o.guildId The snowflake id for the Discord guild to update
  * the stream messages of
- * @param {object} o.guildTwitchConfig The twitch guildConfig object for this
- * guild, used to identify which messages to edit/delete and which streams to
- * send messages for. Get this from `guildConfig.get`.
+ * @param {TwitchConfig} o.guildTwitchConfig The twitch guildConfig object for
+ * this guild, used to identify which messages to edit/delete and which streams
+ * to send messages for. Get this from `guildConfig.get`.
  * @param {Map<string, HelixStream>} o.userIdToStreamMap A map from Twitch API
  * user ids to HelixStream objects. Get this from `getMonitoredStreams`.
- * @param {Map<string, HelixStream>} o.gameIdToStreamMap A map from Twitch API
- * game ids to HelixStream objects. Get this from `getMonitoredStreams`.
+ * @param {Map<string, HelixStream[]>} o.gameIdToStreamsMap A map from Twitch
+ * API game ids to HelixStream objects. Get this from `getMonitoredStreams`.
  * @returns {Promise<void>}
  */
 async function updateGuildStreamMessages({
@@ -704,7 +730,7 @@ async function updateGuildStreamMessages({
 	guildId,
 	guildTwitchConfig,
 	userIdToStreamMap,
-	gameIdToStreamMap,
+	gameIdToStreamsMap,
 } = {}) {
 	const guild = (
 		discordClient.guilds.resolve(guildId)
@@ -745,9 +771,7 @@ async function updateGuildStreamMessages({
 	// to be deleted or edited:
 	const streamsChannelMessagesToDelete = [];
 	for (const twitchUserId in singleStreamMessages) {
-		const { channel, message, title, gameId } = singleStreamMessages[
-			twitchUserId
-		];
+		const messagesForUser = singleStreamMessages[twitchUserId];
 		const stream = userIdToStreamMap.get(twitchUserId);
 
 		// If the user associated with the message is no longer streaming, or if a
@@ -761,39 +785,57 @@ async function updateGuildStreamMessages({
 			// streams channel (if one is set for this guild). In this case, we want
 			// to bulk delete them along with the messages for followed games/users,
 			// so save them to a separate list:
-			if (channel === streamsChannel) {
-				streamsChannelMessagesToDelete.push(message);
-				continue;
+			for (const messageData of messagesForUser) {
+				const { channel, message } = messageData;
+				if (channel === streamsChannel) {
+					streamsChannelMessagesToDelete.push(message);
+					continue;
+				}
+				mapOfArraysPush(channelIdToMessagesToDeleteMap, channel, message);
 			}
-			mapOfArraysPush(channelIdToMessagesToDeleteMap, channel, message);
-			continue;
-		}
-		// If the info relevant to the stream message embed hasn't changed don't
-		// bother updating the message.
-		if (title === stream.title && gameId === stream.gameId) {
-			continue;
-		}
-		// If the stream message needs updating, retrieve the channel from the cache
-		// or fetch it if needed (while adding the other channels for the guild to
-		// the cache), then update the message:
-		const channelAPI = (
-			channels.resolve(channel)
-			?? (await guild.channels.fetch()).get(channel)
-		);
-		// If the channel in which the message was posted has since been deleted,
-		// remove the config record of the message and don't try to update it:
-		if (channelAPI === undefined) {
-			delete singleStreamMessages[twitchUserId];
 			continue;
 		}
 
-		discordAPIPromises.push(updateStreamMessage(
-			channelAPI,
-			message,
-			userIdToStreamMap.get(twitchUserId),
-			guildTwitchConfig,
-		));
+		// If the stream isn't over, check if the messages need to be updated:
+		// for (const messageData of messagesForUser) {
+		for (let i = 0, len = messagesForUser.length; i < len; ++i) {
+			const messageData = messagesForUser[i];
+			const { title, gameId, channel, message } = messageData;
+
+			// If the info relevant to the stream message embed hasn't changed don't
+			// bother updating the message.
+			//
+			// NOTE: In theory, all the single-stream messages for any given user's
+			// stream should be kept up-to-date and so should have the same title and
+			// gameId properties, so really this shouldn't be on every message object
+			// in the array. However, this would be an annoying change to implement
+			// for almost no benefit.
+			if (title === stream.title && gameId === stream.gameId) {
+				continue;
+			}
+			// If the stream message needs updating, retrieve the channel from the
+			// cache or fetch it if needed (while adding the other channels for the
+			// guild to the cache), then update the message:
+			const channelAPI = (
+				channels.resolve(channel)
+				?? (await guild.channels.fetch()).get(channel)
+			);
+			// If the channel in which the message was posted has since been deleted,
+			// remove the config record of the message and don't try to update it:
+			if (channelAPI === undefined) {
+				messagesForUser.splice(i, 1);
+				continue;
+			}
+
+			discordAPIPromises.push(updateStreamMessage(
+				channelAPI,
+				message,
+				userIdToStreamMap.get(twitchUserId),
+				guildTwitchConfig,
+			));
+		}
 	}
+
 	// Loop over the singleStreamMessages which need to be deleted and make the
 	// appropriate API calls
 	for (const channelId of channelIdToMessagesToDeleteMap.keys()) {
@@ -802,7 +844,7 @@ async function updateGuildStreamMessages({
 			?? (await guild.channels.fetch()).get(channelId)
 		);
 		discordAPIPromises.push(
-			channelAPI.bulkDelete(channelIdToMessagesToDeleteMap.get(channelId))
+			safeBulkDelete(channelAPI, channelIdToMessagesToDeleteMap.get(channelId))
 		);
 	}
 
@@ -823,7 +865,7 @@ async function updateGuildStreamMessages({
 	// simply return after editing/deleting the single-stream messages and
 	// unblocking the single-stream blocked users who stopped streaming:
 	if (streamsChannel === undefined) {
-		return finishUpdating();
+		return await finishUpdating();
 	}
 
 	// Retrieve the Discord.js channel object for the streams channel. By default,
@@ -843,7 +885,7 @@ async function updateGuildStreamMessages({
 		// streamsChannel using the /manage-twitch command to re-enable monitoring
 		// for the guild.
 		delete guildTwitchConfig.streamsChannel;
-		return finishUpdating();
+		return await finishUpdating();
 	}
 
 	// If there *is* a streams channel, handle the messages already posted there,
@@ -927,30 +969,38 @@ async function updateGuildStreamMessages({
 	// Send the request to delete any stream messages in the streams channel which
 	// belong to streams that have ended:
 	discordAPIPromises.push(
-		streamsChannelAPI.bulkDelete(streamsChannelMessagesToDelete)
+		safeBulkDelete(streamsChannelAPI, streamsChannelMessagesToDelete)
 	);
 
 
 	// If the user is blocked, or if there is already a message for this user
 	// in the streams channel, don't bother posting another message for them:
+	const anySingleStreamMessagePostedInStreamsChannel = (userId) => {
+		const messages = singleStreamMessages[userId];
+		if (messages === undefined) {
+			return false;
+		}
+		return messages.some(messageData => messageData.channel === streamsChannel);
+	};
 	const streamBlockedOrPosted = (userId) => (
 		blockedUsersIdSet.has(userId)
 		|| singleStreamBlockedUsersIdSet.has(userId)
 		|| userId in streamsChannelMessages
-		|| singleStreamMessages[userId].channel === streamsChannel
+		|| anySingleStreamMessagePostedInStreamsChannel(userId)
 	);
 
 	// Fourth, we loop over followed games to check if any new messages need
 	// to be posted in the streamsChannel:
 	for (const gameId of followedGameIdSet) {
-		const stream = gameIdToStreamMap.get(gameId);
-
-		if (streamBlockedOrPosted(stream.userId) || !hasRequiredTag(stream)) {
-			continue;
+		const streams = gameIdToStreamsMap.get(gameId);
+		for (const stream of streams) {
+			if (streamBlockedOrPosted(stream.userId) || !hasRequiredTag(stream)) {
+				continue;
+			}
+			discordAPIPromises.push(
+				sendStreamMessage(streamsChannelAPI, stream, guildTwitchConfig)
+			);
 		}
-		discordAPIPromises.push(
-			sendStreamMessage(streamsChannelAPI, stream, guildTwitchConfig)
-		);
 	}
 
 	// Fifth, we loop over followed users:
@@ -963,7 +1013,7 @@ async function updateGuildStreamMessages({
 			sendStreamMessage(streamsChannelAPI, stream, guildTwitchConfig)
 		);
 	}
-	return finishUpdating();
+	return await finishUpdating();
 }
 
 /**
@@ -985,7 +1035,7 @@ export async function updateStreamMessages(
 	const {
 		guildTwitchConfigs,
 		userIdToStreamMap,
-		gameIdToStreamMap,
+		gameIdToStreamsMap,
 	} = await getMonitoredStreams(guildIds);
 
 	// Rather than awaiting each message send/edit/delete request within the loop,
@@ -1001,7 +1051,7 @@ export async function updateStreamMessages(
 			guildId,
 			guildTwitchConfig,
 			userIdToStreamMap,
-			gameIdToStreamMap,
+			gameIdToStreamsMap,
 		}));
 	}
 	// Wait for all the Discord API calls to complete:

@@ -1,5 +1,4 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { byName } from '../privilegeLevels.mjs';
 import * as guildConfig from '../util/guildConfig.mjs';
 import { splitReplyInteraction } from '../util/splitMessageRegex.mjs';
 
@@ -90,7 +89,6 @@ export const data = (new SlashCommandBuilder()
 	)
 	.setDefaultPermission(false)
 );
-export const minimumPrivilege = byName.MOD;
 export async function execute(interaction) {
 	const subcommandName = interaction.options.getSubcommand();
 	let content;

@@ -32,7 +32,11 @@ export async function execute(interaction) {
 		return await interaction.reply({ content, ephemeral: true });
 	}
 	const embed = await makeStreamEmbed(stream);
-	const botMsg = await interaction.reply({ embeds: [embed], fetchReply: true });
+	const botMsg = await interaction.reply({
+		embeds: [embed],
+		allowedMentions: { parse: [] }, // Prevent injection of @mentions
+		fetchReply: true,
+	});
 	if (!doNotDelete) {
 		await monitorStreamMessage(stream, botMsg);
 	}

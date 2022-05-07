@@ -126,7 +126,9 @@ export async function set(guildId, namespace, configObj) {
 	// given namespace:
 	const validate = ajv.getSchema(namespace);
 	if (!validate(configObj)) {
-		throw new TypeError(`Given configuration object doesn't match the schema for the namespace "${namespace}": ${JSON.stringify(validate.errors, null, 2)}`);
+		const err = new TypeError(`Given configuration object doesn't match the schema for the namespace "${namespace}": ${JSON.stringify(validate.errors, null, 2)}`);
+		console.error(err);
+		throw err;
 	}
 
 	const cacheKey = getCacheKey(guildId, namespace);

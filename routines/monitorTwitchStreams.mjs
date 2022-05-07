@@ -7,7 +7,7 @@ export const name = 'monitorTwitchStreams';
 // avoid the chance of getting a cached response.
 export const interval_ms = 62_000;
 export const enabled = true;
-export const initialDelay_ms = 1_000;
+export const initialDelay_ms = 5_000;
 
 // Update all the stream messages is all the guilds the bot is in.
 export async function execute(client) {

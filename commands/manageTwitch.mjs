@@ -22,6 +22,10 @@ export const data = (new SlashCommandBuilder()
 			.setRequired(true)
 		)
 	)
+	.addSubcommand(subcommand => subcommand
+		.setName('clear-stream-data')
+		.setDescription('Clear all data associated with live streams (stream messages, single-stream blocked users, etc.)')
+	)
 	.addSubcommandGroup(subcommandGroup => subcommandGroup
 		.setName('users')
 		.setDescription('Manage which Twitch users\' streams are monitored.')
@@ -137,23 +141,38 @@ export async function execute(interaction) {
 
 	const { guildId, options } = interaction;
 
-	const subcommandGroup = options.getSubcommandGroup();
+	const subcommandGroup = options.getSubcommandGroup(false); // Optional
 	const subcommand = options.getSubcommand(true);
-	if (subcommandGroup === null && subcommand === 'set-streams-channel') {
-		const channel = interaction.getChannel('streams-channel');
-		return await twitchUtils.setStreamsChannel(guildId, channel.id);
+	if (subcommandGroup === null) {
+		if (subcommand === 'set-streams-channel') {
+			const channel = options.getChannel('streams-channel', true);
+			await twitchUtils.setStreamsChannel(guildId, channel.id);
+			const content = `Success! Twitch stream messages for followed users/games will now be sent to ${channel}.`;
+			return await interaction.editReply({ content });
+		}
+		if (subcommand === 'clear-stream-data') {
+			await twitchUtils.clearStreamData(guildId);
+			const content = 'Cleared all data for currently live streams. Streams messages should be reposted within the next minute or so.';
+			return await interaction.editReply({ content });
+		}
 	}
 
 	if (subcommandGroup === 'users') {
 		if (subcommand === 'list-followed') {
 			const usernames = await twitchUtils.getFollowedUserNames(guildId);
-			const content = `These users' streams are currently being followed:${unorderedList(usernames)}`;
+			const content = ((usernames.length > 0)
+				? `These users' streams are currently being followed:${unorderedList(usernames)}`
+				: 'There are currently no followed Twitch users in this guild.'
+			);
 			return await interaction.editReply({ content });
 		}
 
 		if (subcommand === 'list-blocked') {
 			const usernames = await twitchUtils.getBlockedUserNames(guildId);
-			const content = `These users are currently blocked from having their streams reported:${unorderedList(usernames)}`;
+			const content = ((usernames.length > 0)
+				? `These users are currently blocked from having their streams reported:${unorderedList(usernames)}`
+				: 'There are currently no blocked Twitch users in this guild.'
+			);
 			return await interaction.editReply({ content });
 		}
 
@@ -175,7 +194,7 @@ export async function execute(interaction) {
 				const content = `The user "${twitchUsername}" is already being followed. No changes were made.`;
 				return await interaction.editReply({ content, ephemeral: true });
 			}
-			const content = `Successfully followed "${twitchUsername}".`;
+			const content = `Successfully followed "${result.displayName}".`;
 			return await interaction.editReply({ content });
 		}
 
@@ -199,7 +218,7 @@ export async function execute(interaction) {
 				const content = `The user "${twitchUsername}" is already blocked. No changes were made.`;
 				return await interaction.editReply({ content, ephemeral: true });
 			}
-			const content = `Successfully blocked "${twitchUsername}".`;
+			const content = `Successfully blocked "${result.displayName}".`;
 			return await interaction.editReply({ content });
 		}
 		if (subcommand === 'unblock') {
@@ -217,7 +236,10 @@ export async function execute(interaction) {
 	if (subcommandGroup === 'games') {
 		if (subcommand === 'list-followed') {
 			const gameNames = await twitchUtils.getFollowedGameNames(guildId);
-			const content = `These games' streams are currently being followed:${unorderedList(gameNames)}`;
+			const content = ((gameNames.length > 0)
+				? `These games' streams are currently being followed:${unorderedList(gameNames)}`
+				: 'There are currently no followed Twitch games in this guild.'
+			);
 			return await interaction.editReply({ content });
 		}
 		const twitchGameName = options.getString('game-name', true);
@@ -242,7 +264,10 @@ export async function execute(interaction) {
 					{ content, ephemeral: true, allowedMentions }
 				);
 			}
-			const content = `Successfully followed "${sanitizedGameName}".`;
+			const sanitizedTwitchGameName = (
+				Util.escapeMarkdown(result.name).replaceAll('`', '\\`')
+			);
+			const content = `Successfully followed "${sanitizedTwitchGameName}".`;
 			return await interaction.editReply({ content, allowedMentions });
 		}
 
@@ -259,10 +284,15 @@ export async function execute(interaction) {
 		}
 		throw new Error(`Unknkown subcommand /manage-twitch users ${subcommand}!`);
 	} // End "games" subcommand group
+
 	if (subcommandGroup === 'required-tags') {
 		if (subcommand === 'list') {
 			const tagNames = await twitchUtils.getRequiredTagNames(guildId);
-			const content = `These tags are currently required for followed-games' streams to be reported:${unorderedList(tagNames)}`;
+
+			const content = ((tagNames.length > 0)
+				? `These tags are currently required for followed-games' streams to be reported:${unorderedList(tagNames)}`
+				: 'There are currently no required tags for Twitch streams of followed games to be reported in this guild.'
+			);
 			return await interaction.editReply({ content });
 		}
 
@@ -270,13 +300,10 @@ export async function execute(interaction) {
 			const tagList = options.getString('tag-list', true);
 			const tagNames = tagList.split(/\s*;\s*/g);
 			const foundTags = await twitchUtils.setRequiredTags(guildId, tagNames);
-			let content;
-			if (foundTags.length === 0) {
-				content = 'No matching tags were found, so the list of required tags was cleared. This means all followed-games\' streams will be reported from now on.';
-			}
-			else {
-				content = `The following tags were found and required:${unorderedList(foundTags)}`;
-			}
+			const content = ((tagNames.length > 0)
+				? `The following tags were found and required:${unorderedList(foundTags)}`
+				: 'No matching tags were found, so the list of required tags was cleared. This means all followed-games\' streams will be reported from now on.'
+			);
 			return await interaction.editReply({ content });
 		}
 

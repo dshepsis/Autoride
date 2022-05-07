@@ -25,43 +25,36 @@ export const schema = {
 			pattern: patterns.snowflake,
 		},
 		'streamsChannelMessages': {
-			description: `An object mapping from Twitch user ids to an array of
-			objects containing data representing messages posted in the streamsChannel
-			by the monitorTwitchStreams routine, which should be deleted or edited
-			when the user stops streaming or changes stream info.`,
+			description: `An object mapping from Twitch user ids to an object
+			containing data representing a message posted in the streamsChannel by the
+			monitorTwitchStreams routine, which should be deleted or edited when the
+			user stops streaming or changes stream info.`,
 			type: 'object',
 			additionalProperties: false,
 			patternProperties: {
 				[patterns.twitchUserId]: {
-					description: `An array of objects containing data for Discord messages
-					to be deleted when the user stops streaming or edited if they change
-					stream info during a stream`,
-					type: 'array',
-					uniqueItems: true,
-					items: {
-						description: `An object containing a Discord message id. as well as
-						information on the embed posted for the stream so that the message
-						can be edited if the streamer changes it`,
-						type: 'object',
-						additionalProperties: false,
-						required: ['message', 'title', 'gameId'],
-						properties: {
-							'message': {
-								description: `The id of the Discord message containing the to be
-								deleted when the stream is over`,
-								type: 'string',
-								pattern: patterns.snowflake,
-							},
-							'title': {
-								description: `The title of the Twitch stream, as shown in the
-								embed`,
-								type: 'string',
-							},
-							'gameId': {
-								description: 'The Twitch id of the game shown in the embed',
-								type: 'string',
-								pattern: patterns.twitchGameId,
-							},
+					description: `An object containing a Discord message id. as well as
+					information on the embed posted for the stream so that the message
+					can be edited if the streamer changes it`,
+					type: 'object',
+					additionalProperties: false,
+					required: ['message', 'title', 'gameId'],
+					properties: {
+						'message': {
+							description: `The id of the Discord message containing the to be
+							deleted when the stream is over`,
+							type: 'string',
+							pattern: patterns.snowflake,
+						},
+						'title': {
+							description: `The title of the Twitch stream, as shown in the
+							embed`,
+							type: 'string',
+						},
+						'gameId': {
+							description: 'The Twitch id of the game shown in the embed',
+							type: 'string',
+							pattern: patterns.twitchGameId,
 						},
 					},
 				},
@@ -226,11 +219,11 @@ export const schema = {
  * @prop {string} [streamsChannel] The snowflake Id of the discord channel in
  * which to post messages about live streams. Not required, but no streams will
  * be reported unless a channel is set using the /twitch-monitor command
- * @prop {{[userId: string]: StreamsChannelMessage[]}} streamsChannelMessages An
- * object mapping from Twitch user ids to an array of objects containing data
- * representing messages posted in the streamsChannel by the
- * monitorTwitchStreams routine, which should be deleted or edited when the user
- * stops streaming or changes stream info.
+ * @prop {{[userId: string]: StreamsChannelMessage}} streamsChannelMessages An
+ * object mapping from Twitch user ids to an object containing data representing
+ * a message posted in the streamsChannel by the monitorTwitchStreams routine,
+ * which should be deleted or edited when the user stops streaming or changes
+ * stream info.
  * @prop {{[gameName: string]: string}} followedGames An object mapping from
  * Twitch API game names to game ids, representing games for which streams with
  * the required tags are reported.

@@ -9,10 +9,14 @@ selected channel.
 - `/http-monitor` — View and change the list of URLs being monitored for HTTP
 errors, and test URLs for errors.
 - `/manage-colors` — View and change the list of color roles used for `/colors`
-- `/manage-privileges` — View and change the list of roles with the permissions
-to use this bot's privileged commands.
 - `/prune` — Delete a selected number of recent messages.
 - `/wiki` — Search for a page on the Okami Speedrunning wiki by title.
+- `/twitch-post` — Have the bot post an embed containing data about a currently
+live Twitch.tv stream, which can be automatically updated and then deleted when
+the stream ends.
+- `/manage-twitch` — Configure the bot's behavior with respect to automatically
+monitoring and posting messages about Twitch streams, based on lists of followed
+users and games, blocked users, and required tags.
 
 
 # Scopes
@@ -26,8 +30,8 @@ This bot needs the following Bot Permissions:
 - Send Messages: Used mainly for the /embed-message command and
 routines/appointments
 - Manage Messages: For the /prune command
-- Embed Links: Technically optional, but desired for the /embed-message and
-/wiki commands
+- Embed Links: Required for the /twitch-post, /embed-message, and /wiki commands
+commands and the monitorTwitchStreams routine.
 - Manage Roles: For the /colors command
 
 # Bot Role
@@ -48,17 +52,26 @@ message to be sent.
     - Automatic page backups via Archive.org api?
 - Twitch integration:
     - Automatically delete posts in #streams when users are no longer streaming.
-    - Try to detect when runners are streaming Okami and automatically post in #streams, or maybe DM those users to post themselves?
+    - Try to detect when runners are streaming Okami and automatically post in
+      #streams, or maybe DM those users to post themselves?
     - Automatically post clips?
 - Leaderboard integration:
     - Automatically make a post in #announcements when a new WR is verified.
-    - Command to retrieve WR time and 110% threshold for elevated verification requirements.
+    - Command to retrieve WR time and 110% threshold for elevated verification
+      requirements.
     - Commands for game/category rules.
-    - Automatically make a post in #announcements when a change is made to game rules.
-    - Automatically make a post in the associated channel when a change is made in a category's rules.
+    - Automatically make a post in #announcements when a change is made to game
+      rules.
+    - Automatically make a post in the associated channel when a change is made
+      in a category's rules.
 - OkamiMaps Integration:
-    - Command for finding items on maps, like /maps type=items map=shinshu name=crystal, which would give you a link to the okamimaps items table with some search parameters. The site would handle the actual searching itself, client-side.
-    - Maybe automatically posting map or item images when there is only one result? This might require some image generation, which may not be feasible on Rasperry Pi 3b.
+    - Command for finding items on maps, like /maps type=items map=shinshu
+      name=crystal, which would give you a link to the okamimaps items table
+      with some search parameters. The site would handle the actual searching
+      itself, client-side.
+    - Maybe automatically posting map or item images when there is only one
+      result? This might require some image generation, which may not be
+      feasible on Rasperry Pi 3b.
 - Data commands:
     - Item value
     - Enemy health
