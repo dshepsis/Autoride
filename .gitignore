@@ -13,6 +13,9 @@ testDep/
 testFolder/
 keyvTest.cjs
 fsTest.mjs
+twitchTest.mjs
+ajvTest.mjs
+httpTest.mjs
 
 # Logs
 logs
