@@ -993,6 +993,9 @@ async function updateGuildStreamMessages({
 	// to be posted in the streamsChannel:
 	for (const gameId of followedGameIdSet) {
 		const streams = gameIdToStreamsMap.get(gameId);
+		if (streams === undefined) {
+			continue;
+		}
 		for (const stream of streams) {
 			if (streamBlockedOrPosted(stream.userId) || !hasRequiredTag(stream)) {
 				continue;
