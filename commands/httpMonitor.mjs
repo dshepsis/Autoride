@@ -1,5 +1,4 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { byName } from '../privilegeLevels.mjs';
 import * as manageUrls from '../util/manageMonitoredURLs.mjs';
 import { getReportStr } from '../routines/monitorURLsForHTTPErrors.mjs';
 import { splitMessageRegex } from '../util/splitMessageRegex.mjs';
@@ -169,7 +168,6 @@ export const data = (new SlashCommandBuilder()
 	)
 	.setDefaultPermission(false)
 );
-export const minimumPrivilege = byName.MOD;
 export async function execute(interaction) {
 	await interaction.deferReply();
 	const guildId = interaction.guildId;

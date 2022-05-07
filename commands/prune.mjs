@@ -1,6 +1,5 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 
-import { byName } from '../privilegeLevels.mjs';
 import { awaitCommandConfirmation, USER_CONFIRM } from './command-util/awaitCommandConfirmation.mjs';
 
 const MAX_MESSAGES = 100;
@@ -17,7 +16,6 @@ export const data = (new SlashCommandBuilder()
 	)
 	.setDefaultPermission(false)
 );
-export const minimumPrivilege = byName.ADMIN;
 export async function execute(interaction) {
 	const amount = interaction.options.getInteger('amount');
 

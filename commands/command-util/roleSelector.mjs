@@ -45,9 +45,6 @@ export function createRoleSelector({
 	// Optional - True if the returned command should be usable by all users by
 	// default. False if it should be disabled for all users by default.
 	defaultPermission = true,
-	// Optional - What privilege-level the returned command should have if
-	// defaultPermission is false. See privilegeLevels.
-	minimumPrivilege,
 	// Optional - If true, the roles will be sorted based on the order they're
 	// listed in the server's role settings. If false, they will be in the order
 	// given by the roles/rolesFromInteraction parameter.
@@ -232,7 +229,6 @@ export function createRoleSelector({
 			.setDescription(description)
 			.setDefaultPermission(defaultPermission)
 		),
-		minimumPrivilege,
 		execute,
 	};
 }

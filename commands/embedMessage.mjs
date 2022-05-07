@@ -1,7 +1,6 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { MessageEmbed } from 'discord.js';
 import { ChannelType } from 'discord-api-types/v9';
-import { byName } from '../privilegeLevels.mjs';
 import { addUrlObjs } from '../util/manageMonitoredURLs.mjs';
 import { awaitCommandReply, USER_REPLY } from './command-util/awaitCommandReply.mjs';
 import { awaitCommandConfirmation, USER_CONFIRM } from './command-util/awaitCommandConfirmation.mjs';
@@ -13,12 +12,10 @@ export const data = (new SlashCommandBuilder()
 	.addChannelOption(option => option
 		.setName('channel')
 		.setDescription('What channel to repost the message to.')
-		.addChannelType(ChannelType.GuildNews)
-		.addChannelType(ChannelType.GuildText)
+		.addChannelTypes([ChannelType.GuildNews, ChannelType.GuildText])
 	)
 	.setDefaultPermission(false)
 );
-export const minimumPrivilege = byName.ADMIN;
 export async function execute(interaction) {
 	const channel = (
 		interaction.options.getChannel('channel') ?? interaction.channel
