@@ -8,7 +8,7 @@ const { heartbeatURL } = await importJSON(pkgRelPath('./config.json'));
 const MS_PER_MIN = 60 * 1000;
 export const name = 'HTTP Heartbeat';
 
-export const initialDelay_ms = 1 * MS_PER_MIN; // 1 minute
+export const initialDelay_ms = 15_000; // 15 seconds
 export const interval_ms = 5 * MS_PER_MIN; // 5 minutes
 
 export const enabled = !!heartbeatURL;
