@@ -178,7 +178,9 @@ export async function execute(interaction) {
 
 		// All other `users` subcommands require a username parameter, so just get
 		// and validate it up-front:
-		const twitchUsername = options.getString('username', true);
+		const twitchUsername = (
+			options.getString('username', true).trim().toLowerCase()
+		);
 		if (!isValidTwitchUsername(twitchUsername)) {
 			const content = 'The given username is not a valid Twitch username. No changes were made.';
 			return await interaction.editReply({ content, ephemeral: true });
