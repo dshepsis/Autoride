@@ -594,7 +594,7 @@ async function sendStreamMessage(
  * values. If the key is not yet defined, a new array is automatically created
  * to wrap the value.
  * @template K,V
- * @param {Map<K,V>} map
+ * @param {Map<K,V[]>} map
  * @param {K} key
  * @param {V} value
  * @returns {void}
@@ -614,8 +614,9 @@ function mapOfArraysPush(map, key, value) {
  * deleted).
  * @param {BaseGuildTextChannel} channelAPI The d.js channel object containing
  * the messages to delete
- * @param {strings[]} messages An array of message snowflakes to delete
- * @returns {Promise<Collection <Snowflake, Message>>}
+ * @param {string[]} messages An array of message snowflakes to delete
+ * @returns {Promise<Collection <Snowflake, Message>|void>} Returns the same as
+ * bulkDelete, or `undefined` if the message to be deleted was already deleted.
  */
 async function safeBulkDelete(channelAPI, messages) {
 	if (messages.length === 1) {
@@ -627,6 +628,7 @@ async function safeBulkDelete(channelAPI, messages) {
 			// message. Unlike the normal bulkDelete endpoint, this endpoint can throw
 			// an error if the message doesn't exist (e.g. if it was already deleted),
 			// so we catch that specific case and then do nothing.
+			return;
 		}
 	}
 	return await channelAPI.bulkDelete(messages);
@@ -763,7 +765,7 @@ async function updateGuildStreamMessages({
 	const blockedUsersIdSet = new Set(Object.values(blockedUsers));
 
 	// Store all messages to be deleted so they can be bulkDeleted per channel:
-	/** @type {Map<string, string>} */
+	/** @type {Map<string, string[]>} */
 	const channelIdToMessagesToDeleteMap = new Map();
 	const channels = discordClient.channels;
 

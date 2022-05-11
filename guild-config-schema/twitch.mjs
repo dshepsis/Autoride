@@ -275,13 +275,11 @@ export function makeDefault() {
 export const example = {
 	streamsChannel: '123456789123456789',
 	streamsChannelMessages: {
-		'60360743': [
-			{
-				message: '123456789123456787',
-				title: 'Okami NG Any%',
-				gameId: '467024621',
-			},
-		],
+		'60360743': {
+			message: '123456789123456787',
+			title: 'Okami NG Any%',
+			gameId: '467024621',
+		},
 	},
 	followedGames: {
 		'Ōkami': '18791',
