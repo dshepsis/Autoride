@@ -70,9 +70,16 @@ const twitchGameCache = new AsyncCache((userId) => {
  * @returns {Promise<MessageEmbed>} An embed with fields based on the stream
  */
 export async function makeStreamEmbed(stream) {
-	const { userDisplayName, gameName, title, startDate, thumbnailUrl } = stream;
+	const {
+		userDisplayName,
+		userName,
+		gameName,
+		title,
+		startDate,
+		thumbnailUrl,
+	} = stream;
 	const streamLink = new URL('https://www.twitch.tv');
-	streamLink.pathname = encodeURIComponent(userDisplayName);
+	streamLink.pathname = encodeURIComponent(userName);
 	const urlStr = streamLink.toString();
 
 	const [streamer, game] = await Promise.all([
