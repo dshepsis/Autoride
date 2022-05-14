@@ -6,7 +6,10 @@ import { importDir } from './util/importDir.mjs';
 
 import { pkgRelPath } from './util/pkgRelPath.mjs';
 import { importJSON } from './util/importJSON.mjs';
-const { token } = await importJSON(pkgRelPath('./config.json'));
+const {
+	token,
+	developmentGuildTestChannel,
+} = await importJSON(pkgRelPath('./config.json'));
 
 const client = new Client({
 	intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES],
@@ -21,6 +24,11 @@ const commands = await importDir(pkgRelPath('./commands/'));
 for (const command of commands) {
 	client.commands.set(command.data.name, command);
 }
+
+client.reportError = async (content) => {
+	const channel = await client.channels.fetch(developmentGuildTestChannel);
+	await channel.send(content);
+};
 
 // Get a list of event modules from the /events directory
 const events = await importDir(pkgRelPath('./events/'));
@@ -86,6 +94,7 @@ for (const routine of routines) {
 			// If a routine has an error, all we need to do to temporarily disable it
 			// is to return without calling setTimeout again:
 			console.error(`Routine "${routine.name}" failed with the following error, and was disabled. Restart index.mjs to run this routine again:`, RoutineError);
+			await client.reportError(`Routine "${routine.name}" failed with a ${RoutineError.name} error. Please restart the bot to run this routine again.`);
 			return;
 		}
 		console.log(`Routine "${routine.name}" completed.`);

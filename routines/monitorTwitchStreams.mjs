@@ -11,5 +11,6 @@ export const initialDelay_ms = 5_000;
 
 // Update all the stream messages is all the guilds the bot is in.
 export async function execute(client) {
+	throw new Error('Testing!');
 	await updateStreamMessages(client);
 }

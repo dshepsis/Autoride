@@ -1,3 +1,5 @@
+import { setTimeout as wait } from 'node:timers/promises';
+
 import { MessageEmbed } from 'discord.js';
 
 import { ClientCredentialsAuthProvider } from '@twurple/auth';
@@ -486,15 +488,35 @@ async function* getStreamsManyIds(idArr, idType) {
 		throw new RangeError(`The number of ids specified ${numIds} exceeds the safety limit ${MAX_NUM_IDS}.`);
 	}
 	const numGroups = Math.ceil(numIds / MAX_GROUP_SIZE);
-	for (let i = 0; i < numGroups; ++i) {
+	GroupLoop: for (let i = 0; i < numGroups; ++i) {
 		const groupStart = i * MAX_GROUP_SIZE;
 		const groupEnd = Math.min(groupStart + MAX_GROUP_SIZE, numIds);
 		const groupIds = idArr.slice(groupStart, groupEnd);
 		const streamFilter = { [idType]: groupIds, type: 'live' };
-		const request = twitchClient.streams.getStreamsPaginated(streamFilter);
-		for await (const stream of request) {
-			yield stream;
+
+		// Try to catch twitch API fetchErrors and retry the request a few times if
+		// they fail:
+		const MAX_ATTEMPTS = 5;
+		const RETRY_DELAY_MS = 500;
+		let errCause;
+		for (let attempts = 0; attempts < MAX_ATTEMPTS; ++attempts) {
+			try {
+				const request = twitchClient.streams.getStreamsPaginated(streamFilter);
+				for await (const stream of request) {
+					yield stream;
+				}
+				continue GroupLoop;
+			}
+			catch (fetchError) {
+				console.error(`Request for streams by ${idType} failed attempt ${attempts + 1}.${(attempts < MAX_ATTEMPTS) ? ' Retrying...' : ''}`);
+				errCause = fetchError;
+				await wait(RETRY_DELAY_MS);
+			}
 		}
+		throw new Error(
+			`Request for streams by ${idType} failed after ${MAX_ATTEMPTS} retries:`,
+			{ cause: errCause }
+		);
 	}
 }
 
