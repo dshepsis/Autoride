@@ -32,6 +32,7 @@ allGuildIds.push(...configGuildIds);
  * @typedef { import("@twurple/api").HelixUser } HelixUser
  * @typedef { import("@twurple/api").HelixGame } HelixGame
  * @typedef { import("@twurple/api").HelixTag } HelixTag
+ * @typedef { import("@twurple/api").HelixVideo } HelixVideo
  */
 
 
@@ -132,6 +133,17 @@ export async function getGameByName(gameName) {
  */
 export async function getUserByName(userName) {
 	return await twitchClient.users.getUserByName(userName);
+}
+
+
+/**
+ * Gets video data from the Twitch video API for a single video id
+ * https://dev.twitch.tv/docs/api/reference#get-videos
+ * @param {string} videoId
+ * @returns {Promise<HelixVideo>}
+ */
+export async function getVideo(videoId) {
+	return await twitchClient.videos.getVideoById(videoId);
 }
 
 /**
