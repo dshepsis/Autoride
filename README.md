@@ -17,6 +17,10 @@ the stream ends.
 - `/manage-twitch` — Configure the bot's behavior with respect to automatically
 monitoring and posting messages about Twitch streams, based on lists of followed
 users and games, blocked users, and required tags.
+- `/is-twitch-highlight` — Gets information about a twitch.tv VOD based on its
+  URL. This is useful for checking whether the video for a leaderboard
+  submission is a highlight (permanently hosted) as opposed to a basic archived
+  past-broadcast, which would be automatically deleted after a some time.
 
 
 # Scopes
