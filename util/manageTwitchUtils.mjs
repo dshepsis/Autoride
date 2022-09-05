@@ -18,8 +18,7 @@ const {
 	guildIds: configGuildIds,
 	developmentGuildId,
 } = await importJSON(pkgRelPath('./config.json'));
-const allGuildIds = [developmentGuildId];
-allGuildIds.push(...configGuildIds);
+const allGuildIds = [developmentGuildId, ...configGuildIds];
 
 /**
  * Types:
@@ -31,7 +30,6 @@ allGuildIds.push(...configGuildIds);
  * @typedef { import("@twurple/api").HelixStream } HelixStream
  * @typedef { import("@twurple/api").HelixUser } HelixUser
  * @typedef { import("@twurple/api").HelixGame } HelixGame
- * @typedef { import("@twurple/api").HelixTag } HelixTag
  * @typedef { import("@twurple/api").HelixVideo } HelixVideo
  */
 
@@ -245,7 +243,7 @@ export const USER_ALREADY_BLOCKED = Symbol('This user was already being blocked 
 /**
  * Sets a user to be blocked in a given guild, such that their streams won't be
  * automatically posted in the streamsChannel, even if they stream a followed
- * game with a required tag
+ * game with a keyword in the title
  * @param {string} guildId The snowflake of the Discord guild to block this
  * user in.
  * @param {string} userName A user name as listed on Twitch to block.
@@ -381,82 +379,33 @@ export async function getBlockedUserNames(guildId) {
 }
 
 /**
- * Gets Twitch API tag data for a given set of names.
- *
- * WARNING: This function may take 2+ seconds to resolve! This is because there
- * is no dedicated API endpoint for searching tags by names, so instead we
- * iterate over all tags.
- * @param {string[]} tagNames An array of tag names as listed on Twitch
- * @param {string} [language="en-us"] The IETF Language tag (`en-us` by default)
- * to check tag names under
- * @returns { Promise<{[tagName: string]: HelixTag}> } An object mapping from
- * the given tag names to the given tag data object
+ * Sets an array of keywords as required, such that only streams of followed
+ * games with one or more of them in the title are reported by
+ * `monitorTwitchStreams.mjs`. These are not case sensitive but must be present
+ * as whole-words (delimited by word boundaries \b)
+ * @param {string} guildId The snowflake of the Discord guild to mark these
+ * keywords as required in
+ * @param {string[]} keywords An array of strings which must be present in the
+ * title of a Twitch stream for it to be reported.
+ * @return {Promise<void>}
  */
-export async function getTagsByNames(tagNames, language = 'en-us') {
-	const numTags = tagNames.length;
-	const tagNameSet = new Set(tagNames);
-	const nameToTagMap = Object.create(null);
-	let tagsFound = 0;
-	for await (const tag of twitchClient.tags.getAllStreamTagsPaginated()) {
-		const tagName = tag.getName(language);
-		if (tagNameSet.has(tagName)) {
-			nameToTagMap[tagName] = tag;
-			++tagsFound;
-			if (tagsFound >= numTags) {
-				break;
-			}
-		}
-	}
-	return nameToTagMap;
-}
-
-/**
- * Sets an array of tags as required, such that only streams of followed games
- * tagged as one or more of them are reported by `monitorTwitchStreams.mjs`.
- * @param {string} guildId The snowflake of the Discord guild to mark these tags
- * as required in
- * @param {string[]} tagNames An array of tag names (exactly as listed on
- * Twitch) to set as required
- * @param {string} [language="en-us"] The IETF Language tag (`en-us` by default)
- * to check the tag names under
- * @return {Promise<string[]>} The list of tag names which were found and
- * followed
- */
-export async function setRequiredTags(guildId, tagNames, language = 'en-us') {
+export async function setKeywords(guildId, keywords) {
 	const guildTwitchConfig = await getTwitchConfig(guildId);
-	// If there are no tags given, just clear the tag list:
-	if (tagNames.length === 0) {
-		guildTwitchConfig.requiredTags = {};
-		await guildConfig.set(guildId, 'twitch', guildTwitchConfig);
-		return Object.keys([]);
-	}
-
-	// V slow async function:
-	const tags = await getTagsByNames(tagNames, language);
-
-	// Change the mapping from tagName->HelixTag to tag.id->tagName since the
-	// other info isn't necessary and this object will be serialized:
-	const requiredTags = Object.create(null);
-	for (const tagName in tags) {
-		requiredTags[tagName] = tags[tagName].id;
-	}
-	guildTwitchConfig.requiredTags = requiredTags;
+	guildTwitchConfig.keywords = keywords;
 	await guildConfig.set(guildId, 'twitch', guildTwitchConfig);
-	return Object.keys(tags);
 }
 
 
 /**
- * Gets an array of tag names (in the Twitch API), at least one of which is
- * required for a stream of a followed game in the given guild to be reported
+ * Gets an array of keywords, at least one of which must be in the title of a
+ * stream of a followed game in the given guild for that stream to be reported
  * @param {string} guildId The snowflake of the Discord guild to get the
- * required tags for
- * @returns {Promise<string[]>} An array of Twitch tag names required in the
- * guild
+ * keywords for
+ * @returns {Promise<string[]>} An array of keywords required in the guild
  */
-export async function getRequiredTagNames(guildId) {
+export async function getKeywords(guildId) {
 	const guildTwitchConfig = await getTwitchConfig(guildId);
-	return Object.keys(guildTwitchConfig.requiredTags);
+	return guildTwitchConfig.keywords;
 }
 
 /**
@@ -752,6 +701,19 @@ async function getMonitoredStreams(guildIds = allGuildIds) {
 }
 
 /**
+ * Escapes generic strings to be used in regular expressions constructed with
+ * `new RegExp()`. Copied from
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#escaping
+ * @param {string} string Any string
+ * @returns {string} A string escaped so that it will be matched literally if
+ * used as part of the input to `new RegExp()`
+ */
+function escapeRegExp(string) {
+	// $& means the whole matched string
+	return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
  * Send, edit, and delete stream messages for the given guild, based on the data
  * in the given twitch guildConfig object:
  * @param {object} o
@@ -797,7 +759,7 @@ async function updateGuildStreamMessages({
 		streamsChannel,
 		streamsChannelMessages,
 		followedGames,
-		requiredTags,
+		keywords,
 		followedUsers,
 		blockedUsers,
 		singleStreamBlockedUsers,
@@ -934,27 +896,29 @@ async function updateGuildStreamMessages({
 	// If there *is* a streams channel, handle the messages already posted there,
 	// as well as any followed users/games:
 	const followedGameIdSet = new Set(Object.values(followedGames));
-	const requiredTagIds = Object.values(requiredTags);
-	const anyRequiredTags = (requiredTagIds.length > 0);
-	const requiredTagIdSet = new Set(requiredTagIds);
+	const anyKeywords = (keywords.length > 0);
+
+	// Pre-compile a regular expression used to check if a title contains at least
+	// one keyword
+	const keywordRegex = (anyKeywords
+		? new RegExp(
+			`(?<=\\W|^)(${keywords.map(escapeRegExp).join('|')})(?=\\W|$)`,
+			'i'
+		)
+		: undefined
+	);
 	/**
-	 * Returns true if there are no required tags for this guild, or if the given
-	 * stream has at least one of the required tags. Used to determine whether a
-	 * game stream should be reported/have its message updated:
+	 * Returns true if there are no required keywords for this guild, or if the
+	 * given stream has at least one of the keywords in the title. Used to
+	 * determine whether a game stream should be reported/have its message
+	 * updated:
 	 * @param {HelixStream} stream
 	 * @returns {boolean}
 	 */
-	const hasRequiredTag = (stream) => {
-		if (!anyRequiredTags) {
-			return true;
-		}
-		for (const streamTagId of stream.tagIds) {
-			if (requiredTagIdSet.has(streamTagId)) {
-				return true;
-			}
-		}
-		return false;
-	};
+	const hasKeyword = (stream) => (
+		!anyKeywords
+		|| keywordRegex.test(stream.title)
+	);
 
 	const followedUserIdSet = new Set(Object.values(followedUsers));
 
@@ -994,16 +958,16 @@ async function updateGuildStreamMessages({
 			continue;
 		}
 		// If the user is streaming and isn't a followed user, check if they're
-		// still streaming a required game with at least 1 required tag (if any).
-		// If so, check if the message needs to be edited. If not, add the mesage
-		// to the list of messages to be deleted.
-		if (followedGameIdSet.has(stream.gameId) && hasRequiredTag(stream)) {
+		// still streaming a required game with at least 1 keyword (if any) in the
+		// title. If so, check if the message needs to be edited. If not, add the
+		// mesage to the list of messages to be deleted.
+		if (followedGameIdSet.has(stream.gameId) && hasKeyword(stream)) {
 			updateMessageIfNeeded();
 			continue;
 		}
 		// If the stream isn't by a followed user and either:
 		//   A: isn't for a followed game
-		//   B: is for a followed game but not for a followed tag
+		//   B: is for a followed game but doesn't have a keyword in the title
 		// then delete the message:
 		delete streamsChannelMessages[twitchUserId];
 		streamsChannelMessagesToDelete.push(message);
@@ -1040,7 +1004,7 @@ async function updateGuildStreamMessages({
 			continue;
 		}
 		for (const stream of streams) {
-			if (streamBlockedOrPosted(stream.userId) || !hasRequiredTag(stream)) {
+			if (streamBlockedOrPosted(stream.userId) || !hasKeyword(stream)) {
 				continue;
 			}
 			discordAPIPromises.push(
@@ -1066,7 +1030,7 @@ async function updateGuildStreamMessages({
  * Based on the "twitch" guild config data for each guild, posts new stream
  * messages to the streamsChannel, and edits/deletes old ones based on the
  * Twitch stream data and the config's followed data (followedGames,
- * requiredTags, and followedUsers). Also edits and deletes any
+ * keywords, and followedUsers). Also edits and deletes any
  * singleStreamMessages as needed.
  * @param {DJSClient} discordClient The Discord client through which to make
  * message send/edit/delete requests

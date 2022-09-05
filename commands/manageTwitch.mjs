@@ -101,24 +101,42 @@ export const data = (new SlashCommandBuilder()
 		)
 	)
 	.addSubcommandGroup(subcommandGroup => subcommandGroup
-		.setName('required-tags')
-		.setDescription('Manage which Twitch tags, if any, are required for a followed game stream to be reported')
+		.setName('keywords')
+		.setDescription('Manage which keywords, if any, must be in a followed game\'s stream title for it to be reported')
 		.addSubcommand(subcommand => subcommand
 			.setName('list')
-			.setDescription('See the list of required tags for this guild')
+			.setDescription('See the list of keywords for this guild')
 		)
 		.addSubcommand(subcommand => subcommand
 			.setName('set')
-			.setDescription('Set the list of required tags')
+			.setDescription('Set the list of keywords, overwriting the existing one')
 			.addStringOption(option => option
-				.setName('tag-list')
-				.setDescription('A list of tag names, exactly as listed on Twitch, separated by semicolons (";")')
+				.setName('keyword-list')
+				.setDescription('A list of keyword strings separated by semicolons (";")')
+				.setRequired(true)
+			)
+		)
+		.addSubcommand(subcommand => subcommand
+			.setName('add')
+			.setDescription('Add a single keyword')
+			.addStringOption(option => option
+				.setName('keyword')
+				.setDescription('A keyword string to add')
+				.setRequired(true)
+			)
+		)
+		.addSubcommand(subcommand => subcommand
+			.setName('remove')
+			.setDescription('Remove a single keyword')
+			.addStringOption(option => option
+				.setName('keyword')
+				.setDescription('A keyword string to remove')
 				.setRequired(true)
 			)
 		)
 		.addSubcommand(subcommand => subcommand
 			.setName('clear')
-			.setDescription('Remove all required tags, all streams of followed games are reported')
+			.setDescription('Remove all keywords, so all streams of followed games are reported')
 		)
 	)
 	.setDefaultPermission(false)
@@ -287,31 +305,71 @@ export async function execute(interaction) {
 		throw new Error(`Unknkown subcommand /manage-twitch users ${subcommand}!`);
 	} // End "games" subcommand group
 
-	if (subcommandGroup === 'required-tags') {
+	if (subcommandGroup === 'keywords') {
 		if (subcommand === 'list') {
-			const tagNames = await twitchUtils.getRequiredTagNames(guildId);
+			const keywords = await twitchUtils.getKeywords(guildId);
 
-			const content = ((tagNames.length > 0)
-				? `These tags are currently required for followed-games' streams to be reported:${unorderedList(tagNames)}`
-				: 'There are currently no required tags for Twitch streams of followed games to be reported in this guild.'
+			const content = ((keywords.length > 0)
+				? `At least one of these keywords must be in the title for a followed-games' streams to be reported:${unorderedList(keywords)}`
+				: 'There are currently no required keywords for Twitch streams of followed games to be reported in this guild.'
 			);
 			return await interaction.editReply({ content });
 		}
 
 		if (subcommand === 'set') {
-			const tagList = options.getString('tag-list', true);
-			const tagNames = tagList.split(/\s*;\s*/g);
-			const foundTags = await twitchUtils.setRequiredTags(guildId, tagNames);
-			const content = ((tagNames.length > 0)
-				? `The following tags were found and required:${unorderedList(foundTags)}`
-				: 'No matching tags were found, so the list of required tags was cleared. This means all followed-games\' streams will be reported from now on.'
+			const keywordList = options.getString('keyword-list', true);
+			const keywords = Array.from(new Set(
+				keywordList.split(';').map(k => k.trim()).filter(k => k.length)
+			));
+			await twitchUtils.setKeywords(guildId, keywords);
+			const content = ((keywords.length > 0)
+				? `The following keywords are now required in titles for streams of followed games to be reported:${unorderedList(keywords)}`
+				: 'The list of title keywords was cleared. This means all followed-games\' streams will be reported from now on.'
 			);
 			return await interaction.editReply({ content });
 		}
 
+		if (subcommand === 'add') {
+			const newKeyword = options.getString('keyword', true).trim();
+			if (newKeyword.length === 0) {
+				const content = 'You cannot add an empty keyword. No changes were made.';
+				return await interaction.editReply({ content });
+			}
+			const currKeywords = await twitchUtils.getKeywords(guildId);
+			const keywordSet = new Set(currKeywords);
+			if (keywordSet.has(newKeyword)) {
+				const content = `"${newKeyword}" is already a keyword. No changes were made.`;
+				return await interaction.editReply({ content });
+			}
+			keywordSet.add(newKeyword);
+			const keywords = Array.from(keywordSet);
+			await twitchUtils.setKeywords(guildId, keywords);
+			const content = `"${newKeyword}" was added. The following keywords are now required in titles for streams of followed games to be reported:${unorderedList(keywords)}`;
+			return await interaction.editReply({ content });
+		}
+
+		if (subcommand === 'remove') {
+			const remKeyword = options.getString('keyword', true).trim();
+			if (remKeyword.length === 0) {
+				const content = 'You cannot remove an empty keyword. No changes were made.';
+				return await interaction.editReply({ content });
+			}
+			const currKeywords = await twitchUtils.getKeywords(guildId);
+			const keywordSet = new Set(currKeywords);
+			if (!keywordSet.has(remKeyword)) {
+				const content = `"${remKeyword}" is already not a keyword. No changes were made.`;
+				return await interaction.editReply({ content });
+			}
+			keywordSet.delete(remKeyword);
+			const keywords = Array.from(keywordSet);
+			await twitchUtils.setKeywords(guildId, keywords);
+			const content = `"${remKeyword}" was removed. The following keywords are now required in titles for streams of followed games to be reported:${unorderedList(keywords)}`;
+			return await interaction.editReply({ content });
+		}
+
 		if (subcommand === 'clear') {
-			await twitchUtils.setRequiredTags(guildId, []);
-			const content = 'The list of required tags was cleared. This means all followed-games\' streams will be reported from now on.';
+			await twitchUtils.setKeywords(guildId, []);
+			const content = 'The list of title keywords was cleared. This means all followed-games\' streams will be reported from now on.';
 			return await interaction.editReply({ content });
 		}
 		throw new Error(`Unknkown subcommand /manage-twitch users ${subcommand}!`);

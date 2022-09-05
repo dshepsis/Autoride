@@ -1,12 +1,10 @@
 # Config
 config.json
 autoride-config.json
+dev-config.json
 
 # Per-guild config data:
 guild-config/
-
-# KeyV Sqlite data storage:
-*.sqlite
 
 # Test stuff:
 testDep/

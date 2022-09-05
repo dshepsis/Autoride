@@ -4,7 +4,11 @@ import { importDir } from '../../util/importDir.mjs';
 import { pkgRelPath } from '../../util/pkgRelPath.mjs';
 const schemaModules = await importDir(pkgRelPath('./guild-config-schema/'));
 import { importJSON } from '../../util/importJSON.mjs';
-const { guildIds } = await importJSON(pkgRelPath('./config.json'));
+const {
+	guildIds: configGuildIds,
+	developmentGuildId,
+} = await importJSON(pkgRelPath('./config.json'));
+const allGuildIds = [developmentGuildId, ...configGuildIds];
 
 import { get } from '../../util/guildConfig.mjs';
 
@@ -59,7 +63,7 @@ export async function testSchemas() {
 			errors.push(new TypeError(`The example value for schema "${name}" is invalid: ${JSON.stringify(validate.errors, null, 2)}`));
 		}
 
-		for (const guildId of guildIds) {
+		for (const guildId of allGuildIds) {
 			const config = await get(guildId, name);
 			if (config === undefined) {
 				continue;

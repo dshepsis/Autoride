@@ -10,7 +10,7 @@ export const schema = {
 	required: [
 		'streamsChannelMessages',
 		'followedGames',
-		'requiredTags',
+		'keywords',
 		'followedUsers',
 		'blockedUsers',
 		'singleStreamBlockedUsers',
@@ -62,8 +62,8 @@ export const schema = {
 		},
 		'followedGames': {
 			description: `An object mapping from Twitch API game names to game ids,
-			representing games for which streams with the required tags are
-			reported.`,
+			representing games for which streams with at least one keyword in the title
+			are reported.`,
 			type: 'object',
 			additionalProperties: {
 				description: 'A Twitch API game id',
@@ -71,21 +71,21 @@ export const schema = {
 				pattern: patterns.twitchGameId,
 			},
 		},
-		'requiredTags': {
-			description: `An object mapping from Twitch API tag names to tag ids,
-			representing tags which streams of the followedGames must have in order
-			to be reported.`,
-			type: 'object',
-			additionalProperties: {
-				description: 'A Twitch API tag id',
+		'keywords': {
+			description: `An array of strings representing substrings which must be
+			contained in the titles of streams of followedGames in order for the
+			stream to be reported. These substrings must be not be followed or
+			preceded by \\w word characters.`,
+			type: 'array',
+			uniqueItems: true,
+			items: {
 				type: 'string',
-				pattern: patterns.twitchTagId,
 			},
 		},
 		'followedUsers': {
 			description: `An object mapping from Twitch usernames to user ids, 
 			representing users whose streams are reported regardless of which games
-			they are playing and what tags they use.`,
+			they are playing and what title they use.`,
 			type: 'object',
 			additionalProperties: {
 				description: 'A Twitch user id',
@@ -126,7 +126,7 @@ export const schema = {
 			command, which should be deleted routine when the user stops streaming or
 			edited by the monitorTwitchStreams when they change stream info. The key
 			difference between these messages and streamsChannelMessages, is that
-			these messages are not checked against the followedGames/requiredTags
+			these messages are not checked against the followedGames/keywords
 			list to see if they should be deleted.`,
 			type: 'object',
 			additionalProperties: false,
@@ -183,11 +183,6 @@ export const schema = {
  * @typedef { import("@twurple/api").HelixStream } HelixStream
  * @typedef { import("@twurple/api").HelixUser } HelixUser
  * @typedef { import("@twurple/api").HelixGame } HelixGame
- * @typedef { import("@twurple/api").HelixTag } HelixTag
- * @typedef {object} TwitchConfig
- * @prop {string} [streamsChannel] The id of the Discord channel to which
- * stream notifications should be posted
- * @prop { {[tagName: string]: HelixGame} } followedGames
  */
 
 /**
@@ -226,13 +221,14 @@ export const schema = {
  * stream info.
  * @prop {{[gameName: string]: string}} followedGames An object mapping from
  * Twitch API game names to game ids, representing games for which streams with
- * the required tags are reported.
- * @prop {{[tagName: string]: string}} requiredTags An object mapping from
- * Twitch API tag names to tag ids, representing tags which streams of the
- * followedGames must have in order to be reported.
+ * keywords in the title are reported.
+ * @prop {string[]} keywords An array of strings representing substrings which
+ * must be contained in the titles of streams of followedGames in order for the
+ * stream to be reported. These substrings must be not be followed or preceded
+ * by \\w word characters.
  * @prop {{[userName: string]: string}} followedUsers An object mapping from
  * Twitch usernames to user ids, representing users whose streams are reported
- * regardless of which games they are playing and what tags they use.
+ * regardless of which games they are playing and what title they use.
  * @prop {{[userName: string]: string}} blockedUsers An object mapping from
  * Twitch usernames to user ids, representing users whose streams will not be
  * reported, regardless of whether they are streaming a followed game or not.
@@ -251,7 +247,7 @@ export const schema = {
  * deleted routine when the user stops streaming or edited by the
  * monitorTwitchStreams when they change stream info. The key difference between
  * these messages and streamsChannelMessages, is that these messages are not
- * checked against the followedGames/requiredTags list to see if they should be
+ * checked against the followedGames/keywords list to see if they should be
  * deleted.
  */
 
@@ -263,7 +259,7 @@ export function makeDefault() {
 	return {
 		streamsChannelMessages: {},
 		followedGames: {},
-		requiredTags: {},
+		keywords: [],
 		followedUsers: {},
 		blockedUsers: {},
 		singleStreamBlockedUsers: {},
@@ -286,16 +282,21 @@ export const example = {
 		'Ōkami HD': '467024621',
 		'Ōkamiden': '25256',
 	},
-	requiredTags: {
-		'Any%': 'c9193f35-a88f-4f03-af99-b73fe0db60f3',
-		'Speedrun': '7cefbf30-4c3e-4aa7-99cd-70aabb662f27',
-		'WR Attempts': '2b19c8f9-695f-4ea1-a5fe-eba176770dbc',
-		'TAS': '0b83a789-5f6a-45f0-b6a3-a56926b6f8b5',
-		'PB Attempts': '77a928f7-39da-4dad-9d81-3e6bd7a36e04',
-		'Glitch Hunting': 'd6de2e71-689a-4c47-ad61-6ec6182f9491',
-		'Glitched': '5788eae8-312d-43b5-a0b6-465eda087617',
-		'Low%': 'a716383e-a9ff-4531-be5f-e25cdd7585d8',
-	},
+	keywords: [
+		'Any%',
+		'Speedrun',
+		'WR Attempts',
+		'TAS',
+		'PB Attempts',
+		'Glitch Hunting',
+		'Glitched',
+		'Low%',
+		'AB',
+		'All Brushes',
+		'Top Dog',
+		'AMB',
+		'All Major Bosses',
+	],
 	followedUsers: {
 		'loveauride': '60360743',
 	},

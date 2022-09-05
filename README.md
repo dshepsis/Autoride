@@ -16,7 +16,7 @@ live Twitch.tv stream, which can be automatically updated and then deleted when
 the stream ends.
 - `/manage-twitch` — Configure the bot's behavior with respect to automatically
 monitoring and posting messages about Twitch streams, based on lists of followed
-users and games, blocked users, and required tags.
+users and games, blocked users, and required keywords.
 - `/is-twitch-highlight` — Gets information about a twitch.tv VOD based on its
   URL. This is useful for checking whether the video for a leaderboard
   submission is a highlight (permanently hosted) as opposed to a basic archived
