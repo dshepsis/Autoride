@@ -1,6 +1,6 @@
 import { setTimeout as wait } from 'node:timers/promises';
 
-import { MessageEmbed } from 'discord.js';
+import { MessageEmbed, Util } from 'discord.js';
 
 import { ClientCredentialsAuthProvider } from '@twurple/auth';
 import { ApiClient } from '@twurple/api';
@@ -94,7 +94,7 @@ export async function makeStreamEmbed(stream) {
 		})
 		.setTitle(urlStr)
 		.setURL(urlStr)
-		.setDescription(title)
+		.setDescription(Util.escapeMarkdown(title).replaceAll('`', '\\`'))
 		.setThumbnail(game.boxArtUrl.replace('{width}x{height}', '240x320'))
 		.setImage(thumbnailUrl.replace('-{width}x{height}', ''))
 		.setTimestamp(startDate)
