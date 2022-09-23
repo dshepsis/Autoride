@@ -9,4 +9,5 @@ export async function execute(client) {
 	);
 
 	console.log('Finished setting up commands!');
+	client.reportError('Bot successfully restarted!');
 }
