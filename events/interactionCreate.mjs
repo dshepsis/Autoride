@@ -33,7 +33,8 @@ export async function execute(interaction) {
 				return await interaction.reply({ content });
 			}
 			catch (reportErrorToUserError) {
-				console.error(`Sending an error reply for the "${interaction.commandName}" command also failed...`, reportErrorToUserError);
+				console.log(`ERROR: Sending an error reply for the "${interaction.commandName}" command also failed. Restarting...`, reportErrorToUserError);
+				process.kill(process.pid, 'SIGTERM');
 			}
 		}
 	}
