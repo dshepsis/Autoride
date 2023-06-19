@@ -46,7 +46,7 @@ export function makeDefault(name) {
  * values for each guild, for validity against the corresponding guild config
  * schemas. Returns an array of TypeErrors for any errors found. If no errors
  * were found, the returned value will be an empty array.
- * @returns {TypeError[]}
+ * @returns {Promise<TypeError[]>}
  */
 export async function testSchemas() {
 	const errors = [];
