@@ -10,7 +10,7 @@ export const data = (new SlashCommandBuilder()
 	.addChannelOption(option => option
 		.setName('channel')
 		.setDescription('What channel to repost the message to.')
-		.addChannelTypes([ChannelType.GuildAnnouncement, ChannelType.GuildText])
+		.addChannelTypes(ChannelType.GuildAnnouncement, ChannelType.GuildText)
 	)
 	.setDefaultPermission(false)
 );

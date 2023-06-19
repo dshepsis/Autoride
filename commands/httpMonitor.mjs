@@ -11,7 +11,7 @@ const scopeChoices = [
 	'THIS CHANNEL',
 	'MINE',
 	'SINGLE URL',
-].map(c => [c, c]);
+].map(c => ({name: c, value: c}));
 
 // Used as choices for the remove subcommand
 const degreeChoices = [
@@ -19,7 +19,7 @@ const degreeChoices = [
 	'FOR ME IN ALL CHANNELS',
 	'FOR THIS CHANNEL',
 	'REMOVE COMPLETELY',
-].map(c => [c, c]);
+].map(c => ({name: c, value: c}));
 
 // For an array of urlObjs, returns a human readable message describing all of
 // them. The guild object is required to determine the tags corresponding to
@@ -76,7 +76,7 @@ export const data = (new SlashCommandBuilder()
 		.addStringOption(option => option
 			.setName('scope')
 			.setDescription('Which group of URLs to re-enable')
-			.setChoices(scopeChoices)
+			.setChoices(...scopeChoices)
 			.setRequired(true)
 		)
 		.addStringOption(option => option
@@ -90,7 +90,7 @@ export const data = (new SlashCommandBuilder()
 		.addStringOption(option => option
 			.setName('scope')
 			.setDescription('Which group of URLs to disable')
-			.setChoices(scopeChoices)
+			.setChoices(...scopeChoices)
 			.setRequired(true)
 		)
 		.addStringOption(option => option
@@ -104,7 +104,7 @@ export const data = (new SlashCommandBuilder()
 		.addStringOption(option => option
 			.setName('scope')
 			.setDescription('Which group of URLs to list')
-			.setChoices(scopeChoices)
+			.setChoices(...scopeChoices)
 			.setRequired(true)
 		)
 		.addStringOption(option => option
@@ -118,7 +118,7 @@ export const data = (new SlashCommandBuilder()
 		.addStringOption(option => option
 			.setName('scope')
 			.setDescription('Which group of URLs to test')
-			.setChoices(scopeChoices)
+			.setChoices(...scopeChoices)
 			.setRequired(true)
 		)
 		.addBooleanOption(option => option
@@ -162,7 +162,7 @@ export const data = (new SlashCommandBuilder()
 		.addStringOption(option => option
 			.setName('degree')
 			.setDescription('To what degree should alerts or monitoring be removed')
-			.setChoices(degreeChoices)
+			.setChoices(...degreeChoices)
 			.setRequired(true)
 		)
 	)

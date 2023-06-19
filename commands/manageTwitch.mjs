@@ -16,7 +16,7 @@ export const data = (new SlashCommandBuilder()
 		.addChannelOption(option => option
 			.setName('streams-channel')
 			.setDescription('The channel Twitch stream notifications will be sent to')
-			.addChannelTypes([ChannelType.GuildAnnouncement, ChannelType.GuildText])
+			.addChannelTypes(ChannelType.GuildAnnouncement, ChannelType.GuildText)
 			.setRequired(true)
 		)
 	)
