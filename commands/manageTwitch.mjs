@@ -2,7 +2,7 @@ import { SlashCommandBuilder } from '@discordjs/builders';
 import * as twitchUtils from '../util/manageTwitchUtils.mjs';
 import { ChannelType } from 'discord-api-types/v9';
 import * as patterns from '../guild-config-schema/schema-util/patterns.mjs';
-import { Util } from 'discord.js';
+import { escapeMarkdown } from 'discord.js';
 
 const twitchUsernameRegex = new RegExp(patterns.twitchUsername, 'u');
 function isValidTwitchUsername(username) {
@@ -267,7 +267,7 @@ export async function execute(interaction) {
 			const content = 'The given game name is too long! No changes were made.';
 			return await interaction.editReply({ content, ephemeral: true });
 		}
-		const sanitizedGameName = Util.escapeMarkdown(twitchGameName).replaceAll('`', '\\`');
+		const sanitizedGameName = escapeMarkdown(twitchGameName).replaceAll('`', '\\`');
 		const allowedMentions = { parse: [] }; // Prevent injection of @mentions
 
 		if (subcommand === 'follow') {
@@ -285,7 +285,7 @@ export async function execute(interaction) {
 				);
 			}
 			const sanitizedTwitchGameName = (
-				Util.escapeMarkdown(result.name).replaceAll('`', '\\`')
+				escapeMarkdown(result.name).replaceAll('`', '\\`')
 			);
 			const content = `Successfully followed "${sanitizedTwitchGameName}".`;
 			return await interaction.editReply({ content, allowedMentions });

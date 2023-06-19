@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { fetchJSON } from './command-util/fetchJSON.mjs';
-import { Util } from 'discord.js';
+import { escapeMarkdown } from 'discord.js';
 
 const WIKI_API_BASE = 'https://okami.speedruns.wiki/api.php?';
 export const data = (new SlashCommandBuilder()
@@ -37,7 +37,7 @@ export async function execute(interaction) {
 	}
 	if (response === undefined) {
 		// If no matching pages are found, direct the user to the wiki's search page:
-		const escapedQuery = Util.escapeMarkdown(query).replaceAll('`', '\\`');
+		const escapedQuery = escapeMarkdown(query).replaceAll('`', '\\`');
 		const content = `Didn't find any pages with titles matching "${escapedQuery}".\nTry this wiki search link instead: https://okami.speedruns.wiki/index.php?search=${encodeURIComponent(query)}`;
 		return await interaction.reply({ content });
 	}
