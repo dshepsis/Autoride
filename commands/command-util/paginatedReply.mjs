@@ -1,4 +1,4 @@
-import { MessageEmbed, MessageActionRow, MessageButton } from 'discord.js';
+import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
 export async function paginatedReply({
 	contents,
@@ -8,7 +8,7 @@ export async function paginatedReply({
 } = {}) {
 	const numPages = contents.length;
 	const contentEmbeds = contents.map(
-		str => new MessageEmbed().setDescription(str)
+		str => new EmbedBuilder().setDescription(str)
 	);
 	// If there is only one page, do not include the page buttons:
 	if (numPages === 1) {
@@ -52,16 +52,16 @@ export async function paginatedReply({
 	const buttonComponents = [];
 	for (const button of buttonOrder) {
 		buttonData[button.id] = button;
-		const component = (new MessageButton()
+		const component = (new ButtonBuilder()
 			.setCustomId(button.id)
 			.setLabel(button.label)
-			.setStyle(button.style ?? 'SECONDARY')
+			.setStyle(button.style ?? ButtonStyle.Secondary)
 			.setDisabled(button.disabled ?? false)
 		);
 		button.component = component;
 		buttonComponents.push(component);
 	}
-	const row = new MessageActionRow().addComponents(buttonComponents);
+	const row = new ActionRowBuilder().addComponents(buttonComponents);
 	const getPageResponse = page => {
 		buttonData['first-page'].component.setDisabled(page <= 0);
 		buttonData['previous-page'].component.setDisabled(page <= 0);

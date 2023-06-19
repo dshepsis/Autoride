@@ -1,6 +1,6 @@
 import { setTimeout as wait } from 'node:timers/promises';
 
-import { MessageEmbed, Util } from 'discord.js';
+import { EmbedBuilder, escapeMarkdown } from 'discord.js';
 
 import { ClientCredentialsAuthProvider } from '@twurple/auth';
 import { ApiClient } from '@twurple/api';
@@ -66,7 +66,7 @@ const twitchGameCache = new AsyncCache((userId) => {
 /**
  * Creates a Discord.js embed based on the given Twitch stream
  * @param {HelixStream} stream
- * @returns {Promise<MessageEmbed>} An embed with fields based on the stream
+ * @returns {Promise<EmbedBuilder>} An embed with fields based on the stream
  */
 export async function makeStreamEmbed(stream) {
 	const {
@@ -85,7 +85,7 @@ export async function makeStreamEmbed(stream) {
 		twitchUserCache.fetch(stream.userId),
 		twitchGameCache.fetch(stream.gameId),
 	]);
-	return (new MessageEmbed()
+	return (new EmbedBuilder()
 		.setColor(0x9146ff) // Twitch Color
 		.setAuthor({
 			name: `${userDisplayName} is playing ${gameName}! `,
@@ -94,7 +94,7 @@ export async function makeStreamEmbed(stream) {
 		})
 		.setTitle(urlStr)
 		.setURL(urlStr)
-		.setDescription(Util.escapeMarkdown(title).replaceAll('`', '\\`'))
+		.setDescription(escapeMarkdown(title).replaceAll('`', '\\`'))
 		.setThumbnail(game.boxArtUrl.replace('{width}x{height}', '240x320'))
 		.setImage(thumbnailUrl.replace('-{width}x{height}', ''))
 		.setTimestamp(startDate)

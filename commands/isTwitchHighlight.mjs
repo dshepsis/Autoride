@@ -1,6 +1,6 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { getVideo } from '../util/manageTwitchUtils.mjs';
-import { Util } from 'discord.js';
+import { escapeMarkdown } from 'discord.js';
 
 
 export const data = (new SlashCommandBuilder()
@@ -44,7 +44,7 @@ export async function execute(interaction) {
 	await interaction.deferReply({ ephemeral: true });
 	try {
 		videoData = await getVideo(videoId);
-		content = `The given twitch VOD is a ${videoData.duration} ${videoData.isPublic ? 'public' : 'privated'} ${videoData.type} by ${videoData.userDisplayName} with title "${Util.escapeMarkdown(videoData.title)}" published on ${videoData.publishDate.toLocaleDateString('en-GB', { dateStyle: 'long' })}.`;
+		content = `The given twitch VOD is a ${videoData.duration} ${videoData.isPublic ? 'public' : 'privated'} ${videoData.type} by ${videoData.userDisplayName} with title "${escapeMarkdown(videoData.title)}" published on ${videoData.publishDate.toLocaleDateString('en-GB', { dateStyle: 'long' })}.`;
 	}
 	catch (videoNotFoundError) {
 		content = 'Error: The given video was unavailable/not found.';

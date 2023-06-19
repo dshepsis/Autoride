@@ -1,4 +1,4 @@
-import { MessageActionRow, MessageSelectMenu } from 'discord.js';
+import { ActionRowBuilder, StringSelectMenuBuilder, ComponentType } from 'discord.js';
 import { SlashCommandBuilder } from '@discordjs/builders';
 
 async function getSelectableRoles({
@@ -107,7 +107,7 @@ export function createRoleSelector({
 				firstIndex,
 				firstIndex + pageSize
 			);
-			return new MessageActionRow().addComponents(new MessageSelectMenu()
+			return new ActionRowBuilder().addComponents(new StringSelectMenuBuilder()
 				.setCustomId(name)
 				.setPlaceholder('Select a role...')
 				.addOptions(options)
@@ -134,7 +134,7 @@ export function createRoleSelector({
 				const iStr = i.toString();
 				pageOptions.push({ label: iStr, value: iStr });
 			}
-			return new MessageActionRow().addComponents(new MessageSelectMenu()
+			return new ActionRowBuilder().addComponents(new StringSelectMenuBuilder()
 				.setCustomId('page')
 				.setPlaceholder(`Go to a page. Currently on page ${currentPage + 1}/${numPages}`)
 				.addOptions(pageOptions)
@@ -163,7 +163,7 @@ export function createRoleSelector({
 		// Create the collector:
 		const IDLE_TIMEOUT = 30000; // milliseconds
 		const collector = selectMessage.createMessageComponentCollector(
-			{ componentType: 'SELECT_MENU', idle: IDLE_TIMEOUT }
+			{ componentType: ComponentType.StringSelect, idle: IDLE_TIMEOUT }
 		);
 
 		// Each time the user makes a selection, assign them the selected role and

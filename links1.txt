@@ -1,0 +1,46 @@
+__**Introduction**__
+**Useful introduction to Okami speedrunning**
+https://fastokami.carrd.co/ 
+
+__**Information:**__
+**Speedrun.com Pages** :trophy:
+• [Ōkami](https://www.speedrun.com/Okami) 
+• [Ōkamiden](https://www.speedrun.com/Okamiden) 
+
+**Video Tutorials** :film_frames:
+• [Ōkami HD NG+ Any% by Kinnin](https://youtu.be/S5ByTBXJlzg) 
+• [Ōkami HD NG+ Any% (Cherry Bomb Route) by Darkness](https://youtu.be/rispXR1NNdU) 
+• [Ōkami HD NG Any% (Beginners' Guide) by Auride](https://www.youtube.com/playlist?list=PLqC5BKx5eR95mzsPwkwNf-MvKgoP0gcGN) 
+
+**Discord Invite** :mailbox_with_mail:
+• [Ōkami Speedrunning](https://discord.gg/AQNKmMu) 
+
+**Speedrunning Wiki** :books:
+• [Ōkami HD](https://okami.speedruns.wiki/Main_Page) 
+
+**__Routes:__**
+**Ōkami** :wolf:
+• [NG+ Any%](https://www.speedrun.com/Okami/guide/1tiq4) 
+• [NG+ Any% (Cherry Bomb)](https://www.speedrun.com/Okami/guide/fohwg) 
+• [NG+ All Brushes](https://okami.speedruns.wiki/NG%2B_All_Brushes) 
+• [NG Any%](https://www.speedrun.com/Okami/guide/q7x6m) 
+• [NG Any% (Beginner-Friendly)](https://docs.google.com/document/d/1NtUcVU_fQW6sYGkP_HHEKZEYmjCRQW97jTG9-9r18xo) 
+• [Top Dog](https://github.com/Cadarev/Notes/blob/main/Okami_Top_Dog.pdf) 
+
+**Ōkamiden** :wolf:
+• [NG Any%](https://www.speedrun.com/Okamiden/guide/j0gf8) 
+• NG+ Any%: *not available*
+
+__**Tools:**__
+**Timers and Autosplitter** :stopwatch:
+• [LiveSplit](https://livesplit.org/) 
+• [LiveSplit (Web Version)](https://one.livesplit.org) 
+• [AutoSplitter](https://github.com/speedfuns/okami/blob/master/okami.asl) 
+
+**Input Display and Bingo** :wrench:
+• [NohBoard](https://obsproject.com/forum/resources/nohboard.44) 
+• [Bingo](https://lyriati.github.io/okami-1) 
+
+**Broadcasting Software** :video_camera:
+• [OBS Studio](https://obsproject.com) 
+• [XSplit](https://www.xsplit.com) 

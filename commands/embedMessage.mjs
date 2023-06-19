@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { MessageEmbed } from 'discord.js';
+import { EmbedBuilder, ButtonStyle } from 'discord.js';
 import { ChannelType } from 'discord-api-types/v9';
 import { addUrlObjs } from '../util/manageMonitoredURLs.mjs';
 import { awaitCommandReply, USER_REPLY } from './command-util/awaitCommandReply.mjs';
@@ -32,7 +32,7 @@ export async function execute(interaction) {
 	}
 
 	const userContent = userReply.content;
-	const embed = (new MessageEmbed()
+	const embed = (new EmbedBuilder()
 		.setDescription(userContent)
 	);
 	const embedMsg = await channel.send({ embeds: [embed] });
@@ -79,7 +79,7 @@ export async function execute(interaction) {
 		messageToReplyTo: userReply,
 		commandName: 'embed-message',
 		warningContent: `Reply sent to ${channel}: <${embedMsg.url}>.\nSome URL's were found in the message. Do you want to add them to the list of URLs monitored for HTTP errors? You can manage these using the \`/http-monitor\` command. If they're already being monitored, the existing entries will be updated to notify you in this channel.`,
-		buttonStyle: 'PRIMARY',
+		buttonStyle: ButtonStyle.Primary,
 		confirmContent: null,
 		confirmButtonLabel: 'Yes, monitor the URLs in my message.',
 		cancelButtonLabel: 'No, don\'t add URL monitoring.',

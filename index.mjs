@@ -1,6 +1,6 @@
 import { setTimeout as wait } from 'node:timers/promises';
 
-import { Client, Collection, Intents } from 'discord.js';
+import { Client, Collection, GatewayIntentBits } from 'discord.js';
 
 import { importDir } from './util/importDir.mjs';
 
@@ -12,7 +12,7 @@ const {
 } = await importJSON(pkgRelPath('./config.json'));
 
 const client = new Client({
-	intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES],
+	intents: [GatewayIntentBits.FLAGS.GUILDS, GatewayIntentBits.FLAGS.GUILD_MESSAGES],
 	// To hopefully reduce AbortError: The user aborted a request:
 	restRequestTimeout: 60_000,
 	retryLimit: 5,

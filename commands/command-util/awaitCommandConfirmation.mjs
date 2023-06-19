@@ -1,4 +1,4 @@
-import { MessageActionRow, MessageButton } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
 import { Replyable } from './Replyable.mjs';
 
 // User response codes:
@@ -37,12 +37,14 @@ export async function awaitCommandConfirmation({
 	// Optional. The text of the cancel button.
 	cancelButtonLabel = 'Cancel',
 	// Optional. The style of the confirm button. Options are:
-	// - PRIMARY, a blurple button
-	// - SECONDARY, a grey button
-	// - SUCCESS, a green button
-	// - DANGER, a red button (default)
-	// - LINK, a button that navigates to a URL
-	buttonStyle = 'DANGER',
+	// - Primary, a blurple button
+	// - Secondary, a grey button
+	// - Success, a green button
+	// - Danger, a red button (default)
+	// - Link, a button that navigates to a URL
+	// See
+	// https://discord-api-types.dev/api/discord-api-types-v10/enum/ButtonStyle
+	buttonStyle = ButtonStyle.Danger,
 	// Optional. Whether the confirmation message should be ephemeral (only
 	// visible to the command user). true by default. This ONLY applies if
 	// messageToReplyTo is not provided
@@ -54,18 +56,18 @@ export async function awaitCommandConfirmation({
 	// Send a message warning the user about the action
 	const confirmId = 'confirm';
 	const cancelId = 'cancel';
-	const row = (new MessageActionRow()
+	const row = (new ActionRowBuilder()
 		// Create confirm button:
-		.addComponents(new MessageButton()
+		.addComponents(new ButtonBuilder()
 			.setCustomId(confirmId)
 			.setLabel(confirmButtonLabel)
 			.setStyle(buttonStyle),
 		)
 		// Create cancel button:
-		.addComponents(new MessageButton()
+		.addComponents(new ButtonBuilder()
 			.setCustomId(cancelId)
 			.setLabel(cancelButtonLabel)
-			.setStyle('SECONDARY'),
+			.setStyle(ButtonStyle.Secon),
 		)
 	);
 	// Use this utility class to allow for generically replying/editing replies to
@@ -89,7 +91,7 @@ export async function awaitCommandConfirmation({
 	let buttonInteraction;
 	try {
 		buttonInteraction = await warningMessage.awaitMessageComponent(
-			{ filter, componentType: 'BUTTON', time: timeout_ms }
+			{ filter, componentType: ComponentType.Button, time: timeout_ms }
 		);
 	}
 	catch (error) {
