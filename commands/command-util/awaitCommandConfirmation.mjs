@@ -67,7 +67,7 @@ export async function awaitCommandConfirmation({
 		.addComponents(new ButtonBuilder()
 			.setCustomId(cancelId)
 			.setLabel(cancelButtonLabel)
-			.setStyle(ButtonStyle.Secon),
+			.setStyle(ButtonStyle.Secondary),
 		)
 	);
 	// Use this utility class to allow for generically replying/editing replies to

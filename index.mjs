@@ -12,7 +12,7 @@ const {
 } = await importJSON(pkgRelPath('./config.json'));
 
 const client = new Client({
-	intents: [GatewayIntentBits.FLAGS.GUILDS, GatewayIntentBits.FLAGS.GUILD_MESSAGES],
+	intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 	// To hopefully reduce AbortError: The user aborted a request:
 	restRequestTimeout: 60_000,
 	retryLimit: 5,
