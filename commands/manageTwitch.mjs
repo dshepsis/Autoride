@@ -1,8 +1,6 @@
-import { SlashCommandBuilder } from '@discordjs/builders';
 import * as twitchUtils from '../util/manageTwitchUtils.mjs';
-import { ChannelType } from 'discord-api-types/v9';
 import * as patterns from '../guild-config-schema/schema-util/patterns.mjs';
-import { escapeMarkdown } from 'discord.js';
+import { SlashCommandBuilder, ChannelType, escapeMarkdown } from 'discord.js';
 
 const twitchUsernameRegex = new RegExp(patterns.twitchUsername, 'u');
 function isValidTwitchUsername(username) {
@@ -18,7 +16,7 @@ export const data = (new SlashCommandBuilder()
 		.addChannelOption(option => option
 			.setName('streams-channel')
 			.setDescription('The channel Twitch stream notifications will be sent to')
-			.addChannelTypes([ChannelType.GuildNews, ChannelType.GuildText])
+			.addChannelTypes([ChannelType.GuildAnnouncement, ChannelType.GuildText])
 			.setRequired(true)
 		)
 	)

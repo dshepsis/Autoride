@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from '@discordjs/builders';
+import { SlashCommandBuilder } from 'discord.js';
 import { getUserStream, makeStreamEmbed, monitorStreamMessage } from '../util/manageTwitchUtils.mjs';
 
 export const data = (new SlashCommandBuilder()

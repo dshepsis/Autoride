@@ -1,6 +1,5 @@
-import { SlashCommandBuilder } from '@discordjs/builders';
 import { fetchJSON } from './command-util/fetchJSON.mjs';
-import { escapeMarkdown } from 'discord.js';
+import { SlashCommandBuilder, escapeMarkdown } from 'discord.js';
 
 const WIKI_API_BASE = 'https://okami.speedruns.wiki/api.php?';
 export const data = (new SlashCommandBuilder()

@@ -1,5 +1,4 @@
-import { SlashCommandBuilder } from '@discordjs/builders';
-
+import { SlashCommandBuilder } from 'discord.js';
 import { awaitCommandConfirmation, USER_CONFIRM } from './command-util/awaitCommandConfirmation.mjs';
 
 const MAX_MESSAGES = 100;

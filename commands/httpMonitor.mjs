@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from '@discordjs/builders';
+import { SlashCommandBuilder } from 'discord.js';
 import * as manageUrls from '../util/manageMonitoredURLs.mjs';
 import { getReportStr } from '../routines/monitorURLsForHTTPErrors.mjs';
 import { splitMessageRegex } from '../util/splitMessageRegex.mjs';

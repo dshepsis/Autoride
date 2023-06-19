@@ -3,8 +3,7 @@
 
 // Subcommands: BORK, auride-says, etc.?
 
-import { SlashCommandBuilder } from '@discordjs/builders';
-import { Options } from 'discord.js';
+import { SlashCommandBuilder } from 'discord.js';
 
 export const data = (new SlashCommandBuilder()
 	.setName('misc')

@@ -1,7 +1,5 @@
-import { SlashCommandBuilder } from '@discordjs/builders';
 import { getVideo } from '../util/manageTwitchUtils.mjs';
-import { escapeMarkdown } from 'discord.js';
-
+import { SlashCommandBuilder, escapeMarkdown } from 'discord.js';
 
 export const data = (new SlashCommandBuilder()
 	.setName('is-twitch-highlight')

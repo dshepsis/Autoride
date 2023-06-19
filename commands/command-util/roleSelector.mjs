@@ -1,5 +1,4 @@
-import { ActionRowBuilder, StringSelectMenuBuilder, ComponentType } from 'discord.js';
-import { SlashCommandBuilder } from '@discordjs/builders';
+import { ActionRowBuilder, StringSelectMenuBuilder, ComponentType, SlashCommandBuilder } from 'discord.js';
 
 async function getSelectableRoles({
 	roles,

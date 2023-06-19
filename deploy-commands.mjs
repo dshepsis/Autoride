@@ -1,6 +1,5 @@
 import { importDir } from './util/importDir.mjs';
-import { REST } from '@discordjs/rest';
-import { Routes } from 'discord-api-types/v9';
+import { REST, Routes } from 'discord.js';
 import { importJSON } from './util/importJSON.mjs';
 
 import { pkgRelPath } from './util/pkgRelPath.mjs';

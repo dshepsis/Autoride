@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from '@discordjs/builders';
+import { SlashCommandBuilder } from 'discord.js';
 import * as guildConfig from '../util/guildConfig.mjs';
 import { splitReplyInteraction } from '../util/splitMessageRegex.mjs';
 

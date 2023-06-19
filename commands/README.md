@@ -1,7 +1,7 @@
 # Description
 Commands are modules which contain information and behavior for discord.js slash
 commands. Each module exports a `data` property and an `execute` method. The
-data property is a `@discordjs/Builders.SlashCommandBuilder`, which declares
+data property is a `discord.js.SlashCommandBuilder`, which declares
 the name, description, parameters etc. of the command. The execute method is a
 function which receives a `discord.js.BaseCommandInteraction`.
 
