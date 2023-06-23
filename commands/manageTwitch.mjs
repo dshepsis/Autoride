@@ -137,7 +137,7 @@ export const data = (new SlashCommandBuilder()
 			.setDescription('Remove all keywords, so all streams of followed games are reported')
 		)
 	)
-	.setDefaultPermission(false)
+	.setDefaultMemberPermissions(0)
 );
 
 /**

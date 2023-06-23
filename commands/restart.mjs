@@ -3,6 +3,7 @@ import { SlashCommandBuilder } from 'discord.js';
 export const data = (new SlashCommandBuilder()
 	.setName('restart')
 	.setDescription('Terminates and restarts the bot.')
+	.setDefaultMemberPermissions(0)
 );
 
 // This command will only be visible and usable from the development guild

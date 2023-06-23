@@ -12,7 +12,7 @@ export const data = (new SlashCommandBuilder()
 		.setDescription('What channel to repost the message to.')
 		.addChannelTypes(ChannelType.GuildAnnouncement, ChannelType.GuildText)
 	)
-	.setDefaultPermission(false)
+	.setDefaultMemberPermissions(0)
 );
 export async function execute(interaction) {
 	const channel = (

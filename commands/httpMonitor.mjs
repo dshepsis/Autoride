@@ -166,7 +166,7 @@ export const data = (new SlashCommandBuilder()
 			.setRequired(true)
 		)
 	)
-	.setDefaultPermission(false)
+	.setDefaultMemberPermissions(0)
 );
 export async function execute(interaction) {
 	await interaction.deferReply();

@@ -87,7 +87,7 @@ export const data = (new SlashCommandBuilder()
 		.setName('list')
 		.setDescription('List all of the color roles for this server.')
 	)
-	.setDefaultPermission(false)
+	.setDefaultMemberPermissions(0)
 );
 export async function execute(interaction) {
 	const subcommandName = interaction.options.getSubcommand();

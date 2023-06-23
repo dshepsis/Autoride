@@ -13,7 +13,7 @@ export const data = (new SlashCommandBuilder()
 		.setMinValue(1)
 		.setMaxValue(MAX_MESSAGES)
 	)
-	.setDefaultPermission(false)
+	.setDefaultMemberPermissions(0)
 );
 export async function execute(interaction) {
 	const amount = interaction.options.getInteger('amount');
