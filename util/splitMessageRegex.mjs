@@ -1,3 +1,5 @@
+import { MessageFlagsBitField } from "discord.js";
+
 /**
  * A function for splitting a string into fixed-length parts. Designed as a
  * workaround to an issue in the discord.js Util.splitMessage function
@@ -10,7 +12,7 @@
  * @param {RegExp} [options.regex] A global regex which matches the delimeters on
  * which to split text when needed to keep each part within maxLength
  * @param {string} [options.prepend] A string to add before each part after the
- * first if the text is split into multiple parts
+ * first iff the text is split into multiple parts
  * @param {string} [options.append] A string to add after each part iff text
  * is split into multiple parts
  * @returns {string[]} An array of strings which are substrings of text, split
@@ -76,6 +78,23 @@ export async function splitReplyInteraction(interaction, content, splitOptions) 
 			content: contents[i],
 			fetchReply: true,
 		}));
+	}
+	return messages;
+}
+
+export async function splitSendMessage(
+	channelAPI, content, splitOptions, {
+		suppressEmbeds = false
+	}={}
+) {
+	const contents = splitMessageRegex(content, splitOptions);
+	const messages = [];
+	const flags = (suppressEmbeds
+		? MessageFlagsBitField.Flags.SuppressEmbeds
+		: 0
+	);
+	for (let i = 1; i < contents.length; ++i) {
+		messages.push(await channelAPI.send({content: contents[i], flags}));
 	}
 	return messages;
 }

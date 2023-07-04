@@ -168,6 +168,11 @@ export const data = (new SlashCommandBuilder()
 	)
 	.setDefaultMemberPermissions(0)
 );
+
+/**
+ * @param { import("discord.js").CommandInteraction } interaction
+ * @returns {Promise<any>}
+ */
 export async function execute(interaction) {
 	await interaction.deferReply();
 	const guildId = interaction.guildId;

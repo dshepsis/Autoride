@@ -11,20 +11,10 @@ import { makeDefault } from '../guild-config-schema/twitch.mjs';
 
 import { AsyncCache } from './AsyncCache.mjs';
 
-import { pkgRelPath } from './pkgRelPath.mjs';
-import { importJSON } from './importJSON.mjs';
-const {
-	twitch: twitchCredentials,
-	guildIds: configGuildIds,
-	developmentGuildId,
-} = await importJSON(pkgRelPath('./config.json'));
-const allGuildIds = [developmentGuildId, ...configGuildIds];
-
 /**
  * Types:
  * @typedef { import('../guild-config-schema/twitch.mjs').TwitchConfig } TwitchConfig
  * @typedef { import("discord.js").Client } DJSClient
- * @typedef { import("discord.js").Guild } Guild
  * @typedef { import("discord.js").BaseGuildTextChannel } BaseGuildTextChannel
  * @typedef { import("discord.js").Message } Message
  * @typedef { import("@twurple/api").HelixStream } HelixStream
@@ -33,9 +23,8 @@ const allGuildIds = [developmentGuildId, ...configGuildIds];
  * @typedef { import("@twurple/api").HelixVideo } HelixVideo
  */
 
-
 /**
- * @param {string} guildId
+ * @param {string} guildId The Discord snowflake for the guild
  * @returns {Promise<TwitchConfig>} The Twitch Config object for the given
  * guild, or an empty data structure which matches the Twitch config schema
  */
@@ -1037,6 +1026,7 @@ async function updateGuildStreamMessages({
  * @param {string[]} [guildIds] Optional. An array of guild Ids to check. By
  * default, all guild ids listed in the bot's overall config.json file are
  * checked.
+ * @returns {Promise<void>}
  */
 export async function updateStreamMessages(
 	discordClient,

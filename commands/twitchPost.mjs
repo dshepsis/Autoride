@@ -17,6 +17,10 @@ export const data = (new SlashCommandBuilder()
 
 const twitchURLOrUsernameRegex = /^\s*(?:https?:\/\/www\.twitch\.tv\/)?([A-Za-z0-9]\w{3,24})\/?\s*$/;
 
+/**
+ * @param { import("discord.js").CommandInteraction } interaction
+ * @returns {Promise<any>}
+ */
 export async function execute(interaction) {
 	const streamStr = interaction.options.getString('stream');
 	const doNotDelete = interaction.options.getBoolean('do-not-delete');

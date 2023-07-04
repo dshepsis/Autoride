@@ -20,7 +20,7 @@ export const schema = {
 		'streamsChannel': {
 			description: `The snowflake Id of the discord channel in which to post
 			messages about live streams. Not required, but no streams will be
-			reported unless a channel is set using the /twitch-monitor command`,
+			reported unless a channel is set using the /manage-twitch command`,
 			type: 'string',
 			pattern: patterns.snowflake,
 		},
@@ -176,16 +176,6 @@ export const schema = {
 };
 
 /**
- * @typedef { import("discord.js").Client } DJSClient
- * @typedef { import("discord.js").Guild } Guild
- * @typedef { import("discord.js").BaseGuildTextChannel } BaseGuildTextChannel
- * @typedef { import("discord.js").Message } Message
- * @typedef { import("@twurple/api").HelixStream } HelixStream
- * @typedef { import("@twurple/api").HelixUser } HelixUser
- * @typedef { import("@twurple/api").HelixGame } HelixGame
- */
-
-/**
  * An object containing a Discord message id. as well as information on the
  * embed posted for the stream so that the message can be edited if the streamer
  * changes it.
@@ -213,7 +203,7 @@ export const schema = {
  * @typedef {object} TwitchConfig
  * @prop {string} [streamsChannel] The snowflake Id of the discord channel in
  * which to post messages about live streams. Not required, but no streams will
- * be reported unless a channel is set using the /twitch-monitor command
+ * be reported unless a channel is set using the /manage-twitch command
  * @prop {{[userId: string]: StreamsChannelMessage}} streamsChannelMessages An
  * object mapping from Twitch user ids to an object containing data representing
  * a message posted in the streamsChannel by the monitorTwitchStreams routine,

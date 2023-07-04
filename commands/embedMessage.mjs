@@ -14,6 +14,11 @@ export const data = (new SlashCommandBuilder()
 	)
 	.setDefaultMemberPermissions(0)
 );
+
+/**
+ * @param { import("discord.js").CommandInteraction } interaction
+ * @returns {Promise<any>}
+ */
 export async function execute(interaction) {
 	const channel = (
 		interaction.options.getChannel('channel') ?? interaction.channel
