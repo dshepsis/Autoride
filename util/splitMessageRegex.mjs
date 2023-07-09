@@ -93,7 +93,7 @@ export async function splitSendMessage(
 		? MessageFlagsBitField.Flags.SuppressEmbeds
 		: 0
 	);
-	for (let i = 1; i < contents.length; ++i) {
+	for (let i = 0; i < contents.length; ++i) {
 		messages.push(await channelAPI.send({content: contents[i], flags}));
 	}
 	return messages;

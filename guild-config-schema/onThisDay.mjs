@@ -75,8 +75,8 @@ export const schema = {
 			events occurred in the past.`,
 			type: 'array',
 			minItems: 12,
-			items: false, // No additional items other than these: vvv
-			prefixItems: [
+			additionalItems: false, // No additional items other than these: vvv
+			items: [
 				"January",
 				"February",
 				"March",

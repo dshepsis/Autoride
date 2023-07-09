@@ -1,15 +1,14 @@
-import { SlashCommandBuilder, MessageFlagsBitField } from 'discord.js';
+import { SlashCommandBuilder, ChannelType } from 'discord.js';
 import * as otdUtils from '../util/otdUtils.mjs';
-import { splitReplyInteraction } from '../util/splitMessageRegex.mjs';
 
 export const data = (new SlashCommandBuilder()
-	.setName('manage-OTD')
+	.setName('manage-otd')
 	.setDescription('Configure automatic "On this day" announcements of notable past events')
 	.addSubcommand(subcommand => subcommand
-		.setName('set-OTD-channel')
+		.setName('set-otd-channel')
 		.setDescription('Set which channel "On this day" announcements will be posted to')
 		.addChannelOption(option => option
-			.setName('OTD-channel')
+			.setName('otd-channel')
 			.setDescription('The channel "On this day" announcements will be posted to')
 			.addChannelTypes(ChannelType.GuildAnnouncement, ChannelType.GuildText)
 			.setRequired(true)
@@ -71,7 +70,7 @@ export const data = (new SlashCommandBuilder()
 			.setDescription('A date string like "25 Jun 2023" for which to give the announcement. If omitted, today is used.')
 		)
 		.addChannelOption(option => option
-			.setName('OTD-channel')
+			.setName('otd-channel')
 			.setDescription('The channel the "On this day" announcement will be posted to. If omitted, this channel is used.')
 			.addChannelTypes(ChannelType.GuildAnnouncement, ChannelType.GuildText)
 		)
@@ -85,7 +84,7 @@ export const data = (new SlashCommandBuilder()
  * otherwise.
  */
 function isDateValid(dateObj) {
-	return Number.isNaN(dateObj.valueOf());
+	return !Number.isNaN(dateObj.valueOf());
 }
 
 /**
@@ -109,9 +108,9 @@ export async function execute(interaction) {
 	/** @type {string} */
 	const subcommandName = options.getSubcommand();
 
-	if (subcommandName === 'set-OTD-channel') {
+	if (subcommandName === 'set-otd-channel') {
 		/** @type{ import("discord.js").BaseGuildTextChannel } */
-		const channel = options.getChannel('streams-channel', true);
+		const channel = options.getChannel('otd-channel', true);
 		await otdUtils.setOTDChannel(guildId, channel.id);
 		const content = `Success! On-this-day announcements will now be sent to ${channel}.`;
 		return await interaction.reply({ content });
@@ -153,10 +152,11 @@ export async function execute(interaction) {
 		// If scope was 'all', eventFitler will be undefined, which returns all
 		// events.
 		const eventObjs = await otdUtils.getOTDEvents(guildId, eventFilter);
+		console.log(eventObjs);
 		const content = ((eventObjs.length === 0)
-			? `There are not events listed${contentScopeStr}.`
+			? `There are no events listed${contentScopeStr}.`
 			: `All events${contentScopeStr}:${eventObjs.map(
-				eventObj => `\n- ${otdUtils.formatFullDate(eventObj.date)} — ${eventObj.event}}`
+				eventObj => `\n- ${otdUtils.formatFullDate(eventObj.date)} — ${eventObj.event}`
 			).join("")}`
 		);
 		return await interaction.reply({ content });
@@ -181,6 +181,9 @@ export async function execute(interaction) {
 		else if (removedResult === otdUtils.NOT_PRESENT) {
 			content = `There was no notable event found for index ${index} on ${otdUtils.formatFullDate(dateObj)} to remove. Try using \`manageOTD list scope:day\` command to choose the correct index.`;
 		}
+		else {
+			content = `The following event was removed from ${otdUtils.formatFullDate(dateObj)}:\n> ${removedResult}`;
+		}
 		return await interaction.reply({ content });
 	}
 
@@ -199,17 +202,22 @@ export async function execute(interaction) {
 		}
 		/** @type{ import("discord.js").BaseGuildTextChannel } */
 		const channel = (
-			options.getChannel('OTD-channel')
+			options.getChannel('otd-channel')
 			?? interaction.channel
 		);
-		const announcementStr = await otdUtils.makeOTDAnnouncementString(
+		const announcementEmbeds = await otdUtils.makeOTDAnnouncementEmbeds(
 			guildId, dateObj
 		);
-		const announcementMsg = await channel.send({
-			content: announcementStr,
-			flags: MessageFlagsBitField.Flags.SuppressEmbeds
-		});
-		const content = `Reply sent to ${channel}: <${announcementMsg.url}>`;
+		if (announcementEmbeds === null) {
+			const content = `There are no events recorded for ${otdUtils.formatDateNoYear(dateObj)}.`;
+			return await interaction.reply({ content });
+		}
+		
+		const announcementMsgs = [];
+		for (const embed of announcementEmbeds) {
+			announcementMsgs.push(await channel.send({ embeds: [embed] }));
+		}
+		const content = `Announcement sent to ${channel}: <${announcementMsgs[0].url}>`;
 		return await interaction.reply({ content });
 	}
 

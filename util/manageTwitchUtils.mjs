@@ -11,6 +11,15 @@ import { makeDefault } from '../guild-config-schema/twitch.mjs';
 
 import { AsyncCache } from './AsyncCache.mjs';
 
+import { pkgRelPath } from './pkgRelPath.mjs';
+import { importJSON } from './importJSON.mjs';
+const {
+	twitch: twitchCredentials,
+	guildIds: configGuildIds,
+	developmentGuildId,
+} = await importJSON(pkgRelPath('./config.json'));
+const allGuildIds = [developmentGuildId, ...configGuildIds];
+
 /**
  * Types:
  * @typedef { import('../guild-config-schema/twitch.mjs').TwitchConfig } TwitchConfig
