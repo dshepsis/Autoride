@@ -17,4 +17,4 @@ export const twitchUserId = '^\\d{1,15}$';
 // `Intl.DateTimeFormat('en-GB', {day: "2-digit", month: "long", year: "numeric"})`,
 // so a leading 0 is required for days 1-9.
 export const dayOfMonth = '^[12]?\\d|3[01]$';
-export const readableDate = '^[012]\\d|3[01] (January|February|March|April|May|June|July|August|September|October|November|December) \\d+$'
+export const readableDate = '^[012]\\d|3[01] (January|February|March|April|May|June|July|August|September|October|November|December) \\d+$';

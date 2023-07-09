@@ -1,4 +1,4 @@
-import { EmbedBuilder } from 'discord.js'; 
+import { EmbedBuilder } from 'discord.js';
 
 import { makeDefault } from '../guild-config-schema/onThisDay.mjs';
 import * as guildConfig from './guildConfig.mjs';
@@ -40,7 +40,7 @@ async function getOTDConfig(guildId) {
  * @returns {Promise<true>}
  */
 async function setOTDConfig(guildId, guildOTDConfig) {
-    return await guildConfig.set(guildId, 'onThisDay', guildOTDConfig);
+	return await guildConfig.set(guildId, 'onThisDay', guildOTDConfig);
 }
 
 /**
@@ -49,13 +49,13 @@ async function setOTDConfig(guildId, guildOTDConfig) {
  * @param {Date} dateObj A JS Date object
  * @returns {string} A human-readable text representation of the date
  */
-export const formatFullDate = (()=>{
+export const formatFullDate = (() => {
 	const formatter = new Intl.DateTimeFormat('en-GB', {
-		day: "2-digit", month: "long", year: "numeric"
+		day: '2-digit', month: 'long', year: 'numeric',
 	});
-	return function formatFullDate(dateObj) {
-    	return formatter.format(dateObj);
-	}
+	return function(dateObj) {
+		return formatter.format(dateObj);
+	};
 })();
 /**
  * Returns a human-readable string date based on the given date parameter,
@@ -63,13 +63,13 @@ export const formatFullDate = (()=>{
  * @param {Date} dateObj A JS Date object
  * @returns {string} A human-readable text representation of the date
  */
-export const formatDateNoYear = (()=>{
+export const formatDateNoYear = (() => {
 	const formatter = new Intl.DateTimeFormat('en-GB', {
-		day: "2-digit", month: "long"
+		day: '2-digit', month: 'long',
 	});
-	return function formatFullDate(dateObj) {
-    	return formatter.format(dateObj);
-	}
+	return function(dateObj) {
+		return formatter.format(dateObj);
+	};
 })();
 
 /**
@@ -89,24 +89,24 @@ export const formatDateNoYear = (()=>{
  * @returns {Promise<{date: Date, event: string}[]>} An array of objects with
  * js Date properties and an event description string
  */
-export async function getOTDEvents(guildId, {scope, dateObj}={}) {
+export async function getOTDEvents(guildId, { scope, dateObj } = {}) {
 	const guildOnThisDay = (
-        await getOTDConfig(guildId)
+		await getOTDConfig(guildId)
         ?? makeDefault()
-    );
+	);
 	console.log(`Scope: "${scope}" and dateObj: "${formatFullDate(dateObj)}".`);
 	if (scope === undefined) {
 		if (dateObj !== undefined) {
-			throw new Error("dateObj option is specified, but scope is not. Please specify both or neither.")
+			throw new Error('dateObj option is specified, but scope is not. Please specify both or neither.');
 		}
 	}
 	else if (dateObj === undefined) {
-		throw new Error("scope option is specified, but dateObj is not. Please specify both or neither.")
+		throw new Error('scope option is specified, but dateObj is not. Please specify both or neither.');
 	}
 	const eventList = [];
 	for (let monthIndex = 0; monthIndex < 12; ++monthIndex) {
 		if (
-			["day", "month", "dayAllYears"].includes(scope)
+			['day', 'month', 'dayAllYears'].includes(scope)
 			&& dateObj.getMonth() !== monthIndex
 		) {
 			continue;
@@ -114,29 +114,29 @@ export async function getOTDEvents(guildId, {scope, dateObj}={}) {
 		const monthObj = guildOnThisDay.events[monthIndex];
 		for (const dayOfMonthStr in monthObj) {
 			if (
-				["day", "dayAllYears"].includes(scope)
+				['day', 'dayAllYears'].includes(scope)
 				&& dateObj.getDate() !== +dayOfMonthStr
-				|| dayOfMonthStr === "month"
+				|| dayOfMonthStr === 'month'
 			) {
 				continue;
 			}
 			const dayObj = monthObj[dayOfMonthStr];
 			for (const yearStr in dayObj) {
 				if (
-					["day", "month", "year"].includes(scope)
+					['day', 'month', 'year'].includes(scope)
 					&& dateObj.getFullYear() !== +yearStr
 				) {
 					continue;
 				}
 				for (const event of dayObj[yearStr]) {
 					const date = new Date(+yearStr, monthIndex, +dayOfMonthStr);
-					const eventObj = {date, event}
+					const eventObj = { date, event };
 					eventList.push(eventObj);
 				}
 			}
 		}
 	}
-    return eventList;
+	return eventList;
 }
 
 /**
@@ -151,7 +151,7 @@ function dateToBorderColor(dateObj) {
 	// Start by calculating HSL. The hue cycles through the rainbow each year.
 	// The saturation cycles up and down between 60% and 100% in a 12 year
 	// cycle, being at 100% on each year of the dog. The lightness remains
-	// constant at 66%. 
+	// constant at 66%.
 	const year = dateObj.getFullYear();
 	const startOfDay = new Date(year, dateObj.getMonth(), dateObj.getDate());
 	const startOfYear = new Date(year, 0, 1);
@@ -165,96 +165,96 @@ function dateToBorderColor(dateObj) {
 
 	let hue = (timeSinceNewYear - MEAN_CNY_DAY) / yearLen;
 	hue = hue % 1;
-    if (hue < 0) {
+	if (hue < 0) {
 		hue += 1;
-    }
+	}
 
-	const sat = .8 + .2 * Math.cos((year - 2006) * Math.PI / 6);
-	const light = .66;
+	const sat = 0.8 + 0.2 * Math.cos((year - 2006) * Math.PI / 6);
+	const light = 0.66;
 
 	// Convert HSL to RGB:
 	function f(n) {
-        let k = (n + hue * 12) % 12;
-        let a = sat * Math.min(light, 1 - light);
+		const k = (n + hue * 12) % 12;
+		const a = sat * Math.min(light, 1 - light);
 		const rgbFrac = light - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
-        return Math.round(255 * rgbFrac);
-    }
-    return [f(0), f(8), f(4)];
+		return Math.round(255 * rgbFrac);
+	}
+	return [f(0), f(8), f(4)];
 }
 
-/** 
+/**
  * @type{string[]} URLs of icons taken from Steam's achievements, used for
  * embed icons.
  */
 const steamAchievementIconURLs = [
-	"844f0c7d702ece058eba88de82ad980d79af2e7f",
-	"ddb9c92aa730767a6c6203bc067dd73fce90d717",
-	"97f50cd969b297d57e8dd6d27f58eff749c4e5e0",
-	"ff6a01472b7bb1973aad6d1df4537a00fa8bae42",
-	"ec47bcd29baa97aea991c16df53617f77ea6d75d",
-	"40b5e51421dad65be586ae2fc9c9edc7587876a0",
-	"fe809c54adbc411042b82bcb2a40facdfa6ce6a1",
-	"cb598e661e3bbd815893d7b5d2bd6746a890362f",
-	"82afb7d5f9dbf32197777cb64236be744aec776b",
-	"fba65e0d98a2b2d4fafcc5e492daa6ef265a8051",
-	"af10e5dd90597257f2daabebd220ef60e8863ca3",
-	"b3abac7aa79b7cbdb4d08c996c92fe210fb756f3",
-	"8af2750e7a1ca353587a256c2257f39f5ad8952d",
-	"96ff2ef7d91aad8ed4d0db8abb4a74af62e6860e",
-	"26ad70169b89031244019b6ba72adf757f5021dd",
-	"740ba025a56036492813d611ac702eff7aa7c6ce",
-	"27c8a104143e7251a9b8e22d0ab0c1fbce5a80f4",
-	"5a3f8f36afe4887f8182b76724c0a6cea59165dc",
-	"e4bb4266fc2d573604dcdb08736dbbcd54147b60",
-	"1b7be81c30b242c612b4892722a982f23758b88f",
-	"b350916b1b9662c7c197e862313d35f5ce96a59b",
-	"353523c90ec1cd0d71db58472bcbd866083ddfbd",
-	"4af21fa8cc78783120fc18d8a08e71608764b037",
-	"dd74c8d8f0cf2bf9905b031746b6936b1bfc46c3",
-	"9951c80c55296c4b37eb9b9b772be0afafa60690",
-	"03aae12c9cc6e742ef3c72976eec0d454a93a8b9",
-	"c66c68fd816b2c3290f3228ad6038e9bcb34b37d",
-	"4c03a7215652efda87c2a09b52421a8eb739ee88",
-	"01912676e5ef70be71515ef3c3f886989128e7e4",
-	"f55a2d75534b5711d323285b7f14bbd1e8b96566",
-	"25e54117ea85a34b2f6c7791ca8d0b1a0dccc525",
-	"91251c45522f6838e90bd28505c0fd1dc4cabcfc",
-	"a72a47d43d5b52f14811c34ebccba6433b8e18bf",
-	"53386417e9af6f1ea5ac0e9b59ffd39a324aa8e0",
-	"e9e6b050ec0297b69ae6050e6978f5dff2656620",
-	"bc4ba7703e4855c7080c19e9443dbbcdae710a38",
-	"7933737d4b9720a8c99e2d6a61b6b700cb75fce3",
-	"8152f8ccdd81c441c5913c530d6b9872574a7276",
-	"6ee5c2d96dd59fab523861a5c5d59955fbcefd71",
-	"39bfcd19320a068775fdb52238ad48ee1d2fc92a",
-	"c4e1033daee5c227f55b2225affe92597314a633",
-	"52d5517330ed1e7df544524f3f1118cbd9785391",
-	"a30a73a757e80a5d73f787b8e685ecaa7ebdc314",
-	"b3d8a63b133009208168351fd795bd34d80a79d6",
-	"f36f08a3fa310c9eda3ddac54df61a0290209e90",
-	"d17e04667314b759e2fb5b894435ef8a94c67442",
-	"e4d5c9daa8cf9b4eb5e14cda869b8cd97bcc767b",
-	"fb0dab08a691243c73b368543b0041b2fd5bd15e",
-	"440974c7a090abc1a196e006e28e81eb3cd177c2",
-	"f8a864a2d58568473e37cfd589999cfb7dee146c",
-].map(hash=>`https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/587620/${hash}.jpg`);
+	'844f0c7d702ece058eba88de82ad980d79af2e7f',
+	'ddb9c92aa730767a6c6203bc067dd73fce90d717',
+	'97f50cd969b297d57e8dd6d27f58eff749c4e5e0',
+	'ff6a01472b7bb1973aad6d1df4537a00fa8bae42',
+	'ec47bcd29baa97aea991c16df53617f77ea6d75d',
+	'40b5e51421dad65be586ae2fc9c9edc7587876a0',
+	'fe809c54adbc411042b82bcb2a40facdfa6ce6a1',
+	'cb598e661e3bbd815893d7b5d2bd6746a890362f',
+	'82afb7d5f9dbf32197777cb64236be744aec776b',
+	'fba65e0d98a2b2d4fafcc5e492daa6ef265a8051',
+	'af10e5dd90597257f2daabebd220ef60e8863ca3',
+	'b3abac7aa79b7cbdb4d08c996c92fe210fb756f3',
+	'8af2750e7a1ca353587a256c2257f39f5ad8952d',
+	'96ff2ef7d91aad8ed4d0db8abb4a74af62e6860e',
+	'26ad70169b89031244019b6ba72adf757f5021dd',
+	'740ba025a56036492813d611ac702eff7aa7c6ce',
+	'27c8a104143e7251a9b8e22d0ab0c1fbce5a80f4',
+	'5a3f8f36afe4887f8182b76724c0a6cea59165dc',
+	'e4bb4266fc2d573604dcdb08736dbbcd54147b60',
+	'1b7be81c30b242c612b4892722a982f23758b88f',
+	'b350916b1b9662c7c197e862313d35f5ce96a59b',
+	'353523c90ec1cd0d71db58472bcbd866083ddfbd',
+	'4af21fa8cc78783120fc18d8a08e71608764b037',
+	'dd74c8d8f0cf2bf9905b031746b6936b1bfc46c3',
+	'9951c80c55296c4b37eb9b9b772be0afafa60690',
+	'03aae12c9cc6e742ef3c72976eec0d454a93a8b9',
+	'c66c68fd816b2c3290f3228ad6038e9bcb34b37d',
+	'4c03a7215652efda87c2a09b52421a8eb739ee88',
+	'01912676e5ef70be71515ef3c3f886989128e7e4',
+	'f55a2d75534b5711d323285b7f14bbd1e8b96566',
+	'25e54117ea85a34b2f6c7791ca8d0b1a0dccc525',
+	'91251c45522f6838e90bd28505c0fd1dc4cabcfc',
+	'a72a47d43d5b52f14811c34ebccba6433b8e18bf',
+	'53386417e9af6f1ea5ac0e9b59ffd39a324aa8e0',
+	'e9e6b050ec0297b69ae6050e6978f5dff2656620',
+	'bc4ba7703e4855c7080c19e9443dbbcdae710a38',
+	'7933737d4b9720a8c99e2d6a61b6b700cb75fce3',
+	'8152f8ccdd81c441c5913c530d6b9872574a7276',
+	'6ee5c2d96dd59fab523861a5c5d59955fbcefd71',
+	'39bfcd19320a068775fdb52238ad48ee1d2fc92a',
+	'c4e1033daee5c227f55b2225affe92597314a633',
+	'52d5517330ed1e7df544524f3f1118cbd9785391',
+	'a30a73a757e80a5d73f787b8e685ecaa7ebdc314',
+	'b3d8a63b133009208168351fd795bd34d80a79d6',
+	'f36f08a3fa310c9eda3ddac54df61a0290209e90',
+	'd17e04667314b759e2fb5b894435ef8a94c67442',
+	'e4d5c9daa8cf9b4eb5e14cda869b8cd97bcc767b',
+	'fb0dab08a691243c73b368543b0041b2fd5bd15e',
+	'440974c7a090abc1a196e006e28e81eb3cd177c2',
+	'f8a864a2d58568473e37cfd589999cfb7dee146c',
+].map(hash => `https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/587620/${hash}.jpg`);
 /**
  * Returns a random item from the parameter array
  * @template T The type of the items in the array
- * @param {T[]} arr 
+ * @param {T[]} arr
  * @param {number} [seed] Optional. A 32 bit integer used as a seed for PRNG
  * which decides which item will be returned. If omitted,
  * `Math.floor(Math.random() * 2**32)` is used.
  * @return {T}
  */
-function randomDraw(arr, seed = Math.floor(Math.random() * 2**32)) {
+function randomDraw(arr, seed = Math.floor(Math.random() * 2 ** 32)) {
 	// Based on https://github.com/cprosche/mulberry32
 	let t = seed + 0x6D2B79F5;
 	t = Math.imul(t ^ t >>> 15, t | 1);
 	t ^= t + Math.imul(t ^ t >>> 7, t | 61);
 	const randFloat = ((t ^ t >>> 14) >>> 0) / 4294967296;
 
-	return arr[Math.floor(randFloat*arr.length)]
+	return arr[Math.floor(randFloat * arr.length)];
 }
 
 /**
@@ -274,14 +274,14 @@ function randomDraw(arr, seed = Math.floor(Math.random() * 2**32)) {
  */
 export async function makeOTDAnnouncementEmbeds(guildId, dateObj) {
 	const eventObjs = await getOTDEvents(guildId, {
-		scope: 'dayAllYears', dateObj
+		scope: 'dayAllYears', dateObj,
 	});
 	if (eventObjs.length === 0) {
 		return null;
 	}
 	const eventUL = eventObjs.map(
 		eventObj => `- ${eventObj.date.getFullYear()} — ${eventObj.event}`
-	).join("\n");
+	).join('\n');
 
 	const descriptions = splitMessageRegex(eventUL, { maxLength: 4096 });
 	const numEmbeds = descriptions.length;
@@ -291,16 +291,20 @@ export async function makeOTDAnnouncementEmbeds(guildId, dateObj) {
 	// Choose a pseudo-random thumbnail seeded by the parameter date:
 	let thumbnail = randomDraw(
 		steamAchievementIconURLs,
-		dateObj.getFullYear() + dateObj.getMonth()*1e6 + dateObj.getDate()*1e8
+		( // Seed based on the date:
+			dateObj.getFullYear()
+			+ dateObj.getMonth() * 1e6
+			+ dateObj.getDate() * 1e8
+		)
 	);
 
 	// On the anniversary of Okami's release, choose a specific color (red from
 	// the logo) and image (Top Dog achievement icon):
-	if (formatDateNoYear(dateObj) === "20 April") {
+	if (formatDateNoYear(dateObj) === '20 April') {
 		borderColor = [209, 52, 38];
 		thumbnail = 'https://cdn.akamai.steamstatic.com/steamcommunity/public/images/apps/587620/1ca064aaa51d907731147c8c19793db6b09f120c.jpg';
 	}
-	return descriptions.map((desc, i)=>(new EmbedBuilder()
+	return descriptions.map((desc, i) => (new EmbedBuilder()
 		.setColor(borderColor)
 		.setTitle(`On this day, ${
 			formatDateNoYear(dateObj)
@@ -329,7 +333,7 @@ export async function postGuildOTDAnnouncement(discordClient, guildId) {
 
 	// Only post an announcement once per day:
 	const today = new Date();
-	const todayStr = formatFullDate(today)
+	const todayStr = formatFullDate(today);
 	if (guildOTDConfig.lastDayPosted === todayStr) {
 		return false;
 	}
@@ -392,8 +396,8 @@ export async function postOTDAnnouncements(
  */
 export async function setOTDChannel(guildId, channelId) {
 	const guildOTDConfig = await getOTDConfig(guildId);
-    guildOTDConfig.otdChannel = channelId;
-    return await setOTDConfig(guildId, guildOTDConfig)
+	guildOTDConfig.otdChannel = channelId;
+	return await setOTDConfig(guildId, guildOTDConfig);
 }
 /**
  * Adds an event to the guild's "onThisDay" guild-config file.
@@ -406,20 +410,20 @@ export async function setOTDChannel(guildId, channelId) {
  */
 export async function addOTDEvent(guildId, dateObj, description) {
 	const guildOnThisDay = (
-        await getOTDConfig(guildId)
+		await getOTDConfig(guildId)
         ?? makeDefault()
-    );
-    const monthObj = guildOnThisDay.events[dateObj.getMonth()];
-    const dayOfMonth = dateObj.getDate();
+	);
+	const monthObj = guildOnThisDay.events[dateObj.getMonth()];
+	const dayOfMonth = dateObj.getDate();
 	const dayObj = monthObj[dayOfMonth];
 	const eventYear = dateObj.getFullYear();
 
 	// The index where this new event was added
 	let index = 0;
 	// If there is no event for this day on this month:
-    if (dayObj === undefined) {
-        monthObj[dayOfMonth] = { [eventYear]: [description] };
-    }
+	if (dayObj === undefined) {
+		monthObj[dayOfMonth] = { [eventYear]: [description] };
+	}
 	// If there an event for this day on this month, but not from this year:
 	else if (dayObj[eventYear] === undefined) {
 		dayObj[eventYear] = [description];
@@ -458,10 +462,10 @@ export async function removeOTDEvent(guildId, dateObj, index) {
 	const year = dateObj.getFullYear();
 	const eventsOnThisDate = dayOfMonthObj?.[year];
 	if (eventsOnThisDate === undefined) {
-		for (const monthObj of guildOnThisDay.events) {
+		for (const otherMonthObj of guildOnThisDay.events) {
 			// If any non-empty month objects are found (they have a "month"
 			// key by default, so length > 1):
-			if (Object.keys(monthObj).length > 1) {
+			if (Object.keys(otherMonthObj).length > 1) {
 				return NOT_PRESENT;
 			}
 		}

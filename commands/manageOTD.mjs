@@ -36,10 +36,10 @@ export const data = (new SlashCommandBuilder()
 			.setDescription('Which events should be reported? All, or only those on the same day/month/year as the date option?')
 			.setRequired(true)
 			.setChoices(
-				{ name: "All events", value: "all" },
-				{ name: "Same year", value: "year" },
-				{ name: "Same month", value: "month" },
-				{ name: "Same day", value: "day" },
+				{ name: 'All events', value: 'all' },
+				{ name: 'Same year', value: 'year' },
+				{ name: 'Same month', value: 'month' },
+				{ name: 'Same day', value: 'day' },
 			)
 		)
 		.addStringOption(option => option
@@ -90,7 +90,7 @@ function isDateValid(dateObj) {
 /**
  * Replies to a Discord interaction indicating that the date param is invalid
  * @param { import("discord.js").CommandInteraction } interaction The Discord
- * interaction to reply to 
+ * interaction to reply to
  * @param {string} dateStr The value of the date param, which is invalid.
  * @returns { Promise<import("discord.js").InteractionResponse<boolean>> }
  */
@@ -103,7 +103,7 @@ async function invalidDateRespond(interaction, dateStr) {
  * @param { import("discord.js").CommandInteraction } interaction
  * @returns {Promise<any>}
  */
-export async function execute(interaction) {	
+export async function execute(interaction) {
 	const { guildId, options } = interaction;
 	/** @type {string} */
 	const subcommandName = options.getSubcommand();
@@ -116,7 +116,7 @@ export async function execute(interaction) {
 		return await interaction.reply({ content });
 	}
 
-	if (subcommandName === "add") {
+	if (subcommandName === 'add') {
 		/** @type{string} */
 		const dateStr = options.getString('date', true);
 		const dateObj = new Date(dateStr);
@@ -147,7 +147,7 @@ export async function execute(interaction) {
 				return await invalidDateRespond(interaction, dateStr);
 			}
 			eventFilter = { scope, dateObj };
-			contentScopeStr = ` ${(scope === 'day') ? "on" : "in"} the same ${scope} as ${otdUtils.formatFullDate(dateObj)}`;
+			contentScopeStr = ` ${(scope === 'day') ? 'on' : 'in'} the same ${scope} as ${otdUtils.formatFullDate(dateObj)}`;
 		}
 		// If scope was 'all', eventFitler will be undefined, which returns all
 		// events.
@@ -157,7 +157,7 @@ export async function execute(interaction) {
 			? `There are no events listed${contentScopeStr}.`
 			: `All events${contentScopeStr}:${eventObjs.map(
 				eventObj => `\n- ${otdUtils.formatFullDate(eventObj.date)} — ${eventObj.event}`
-			).join("")}`
+			).join('')}`
 		);
 		return await interaction.reply({ content });
 	}
@@ -176,7 +176,7 @@ export async function execute(interaction) {
 		);
 		let content;
 		if (removedResult === otdUtils.NO_EVENTS) {
-			content = "There are no notable events recorded in this guild to remove. Try adding some using `/manageOTD add` to add some.";
+			content = 'There are no notable events recorded in this guild to remove. Try adding some using `/manageOTD add` to add some.';
 		}
 		else if (removedResult === otdUtils.NOT_PRESENT) {
 			content = `There was no notable event found for index ${index} on ${otdUtils.formatFullDate(dateObj)} to remove. Try using \`manageOTD list scope:day\` command to choose the correct index.`;
@@ -212,7 +212,7 @@ export async function execute(interaction) {
 			const content = `There are no events recorded for ${otdUtils.formatDateNoYear(dateObj)}.`;
 			return await interaction.reply({ content });
 		}
-		
+
 		const announcementMsgs = [];
 		for (const embed of announcementEmbeds) {
 			announcementMsgs.push(await channel.send({ embeds: [embed] }));

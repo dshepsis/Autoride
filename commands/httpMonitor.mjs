@@ -11,7 +11,7 @@ const scopeChoices = [
 	'THIS CHANNEL',
 	'MINE',
 	'SINGLE URL',
-].map(c => ({name: c, value: c}));
+].map(c => ({ name: c, value: c }));
 
 // Used as choices for the remove subcommand
 const degreeChoices = [
@@ -19,7 +19,7 @@ const degreeChoices = [
 	'FOR ME IN ALL CHANNELS',
 	'FOR THIS CHANNEL',
 	'REMOVE COMPLETELY',
-].map(c => ({name: c, value: c}));
+].map(c => ({ name: c, value: c }));
 
 // For an array of urlObjs, returns a human readable message describing all of
 // them. The guild object is required to determine the tags corresponding to

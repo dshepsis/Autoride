@@ -3,7 +3,6 @@ import * as patterns from './schema-util/patterns.mjs';
 export const name = 'onThisDay';
 
 
-
 // Creates an AJV schema for a single month. This is used so we can map month
 // names into a discrete, unique schema for each of the 12 months.
 function monthSchema(monthName) {
@@ -20,7 +19,7 @@ function monthSchema(monthName) {
 			'month': {
 				type: 'string',
 				const: monthName,
-			}
+			},
 		},
 		patternProperties: {
 			[patterns.dayOfMonth]: {
@@ -31,15 +30,15 @@ function monthSchema(monthName) {
 				minProperties: 1,
 				additionalProperties: false,
 				patternProperties: {
-					"^\\d+": { //Keys are numbers (years)
+					'^\\d+': { // Keys are numbers (years)
 						description: `An array of strings describing what
 						happened on this month, day, and year.`,
 						type: 'array',
 						minItems: 1,
-						items: {type: "string"}
-					}
-				}
-			}
+						items: { type: 'string' },
+					},
+				},
+			},
 		},
 	};
 }
@@ -77,21 +76,21 @@ export const schema = {
 			minItems: 12,
 			additionalItems: false, // No additional items other than these: vvv
 			items: [
-				"January",
-				"February",
-				"March",
-				"April",
-				"May",
-				"June",
-				"July",
-				"August",
-				"September",
-				"October",
-				"November",
-				"December"
-			].map(monthSchema)
-		}
-	}
+				'January',
+				'February',
+				'March',
+				'April',
+				'May',
+				'June',
+				'July',
+				'August',
+				'September',
+				'October',
+				'November',
+				'December',
+			].map(monthSchema),
+		},
+	},
 };
 
 /**
@@ -135,109 +134,109 @@ export function makeDefault() {
 	return {
 		events: [
 			{
-				month: "January"
+				month: 'January',
 			},
 			{
-				month: "February"
+				month: 'February',
 			},
 			{
-				month: "March"
+				month: 'March',
 			},
 			{
-				month: "April"
+				month: 'April',
 			},
 			{
-				month: "May"
+				month: 'May',
 			},
 			{
-				month: "June"
+				month: 'June',
 			},
 			{
-				month: "July"
+				month: 'July',
 			},
 			{
-				month: "August"
+				month: 'August',
 			},
 			{
-				month: "September"
+				month: 'September',
 			},
 			{
-				month: "October"
+				month: 'October',
 			},
 			{
-				month: "November"
+				month: 'November',
 			},
 			{
-				month: "December"
-			}
-		]
+				month: 'December',
+			},
+		],
 	};
 }
 
 /** @type {OTDConfig} */
 export const example = {
 	'otdChannel': '123456789123456789',
-	'lastDayPosted': "01 January",
+	'lastDayPosted': '01 January',
 	'events': [
 		{
 			'16': {
 				'2023': [
-					"Legoerofeggos performed [NG Any%](https://youtu.be/a26nEKGWFaM) on GDQ Hotfix - She is Speed."
-				]
+					'Legoerofeggos performed [NG Any%](https://youtu.be/a26nEKGWFaM) on GDQ Hotfix - She is Speed.',
+				],
 			},
 			'30': {
 				'2016': [
-					"Kinnin11 performed [NG+ All Brushes](https://youtu.be/eANmtRj91to) at Pre-ESA 2016."
-				]
+					'Kinnin11 performed [NG+ All Brushes](https://youtu.be/eANmtRj91to) at Pre-ESA 2016.',
+				],
 			},
-			month: "January"
+			month: 'January',
 		},
 		{
-			month: "February"
+			month: 'February',
 		},
 		{
-			month: "March"
+			month: 'March',
 		},
 		{
-			month: "April"
+			month: 'April',
 		},
 		{
-			month: "May"
+			month: 'May',
 		},
 		{
-			month: "June"
+			month: 'June',
 		},
 		{
-			month: "July"
+			month: 'July',
 		},
 		{
 			'12': {
 				'2019': [
-					"Kinnin11 performed [NG+ Any%](https://youtu.be/Vq9HSzvsUds) at [BSG Annual 2019](https://horaro.org/bsgmarathon/annual2019)."
+					'Kinnin11 performed [NG+ Any%](https://youtu.be/Vq9HSzvsUds) at [BSG Annual 2019](https://horaro.org/bsgmarathon/annual2019).',
 				],
 				'2022': [
-					"Legoerofeggos performed [NG Any%](https://youtu.be/toA_jkNI_Lo) at [ARPGME 2022](https://oengus.io/en/marathon/arpgme2022)."
-				]
+					'Legoerofeggos performed [NG Any%](https://youtu.be/toA_jkNI_Lo) at [ARPGME 2022](https://oengus.io/en/marathon/arpgme2022).',
+				],
 			},
-			month: "August"
+			month: 'August',
 		},
 		{
-			month: "September"
+			month: 'September',
 		},
 		{
-			month: "October"
+			month: 'October',
 		},
 		{
-			month: "November"
+			month: 'November',
 		},
 		{
-			month: "December",
+			month: 'December',
 			'10': {
-				"2020": [
-					"Auride discovered [Sneeze Skip](https://okami.speedruns.wiki/Sneeze_Skip).",
-					"Auride discovered [Double Skip](https://okami.speedruns.wiki/Double_Skip)."
-				]
-			}
-		}
-	]
+				'2020': [
+					'Auride discovered [Sneeze Skip](https://okami.speedruns.wiki/Sneeze_Skip).',
+					'Auride discovered [Double Skip](https://okami.speedruns.wiki/Double_Skip).',
+				],
+			},
+		},
+	],
 };

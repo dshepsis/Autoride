@@ -1,4 +1,4 @@
-import { MessageFlagsBitField } from "discord.js";
+import { MessageFlagsBitField } from 'discord.js';
 
 /**
  * A function for splitting a string into fixed-length parts. Designed as a
@@ -84,8 +84,8 @@ export async function splitReplyInteraction(interaction, content, splitOptions) 
 
 export async function splitSendMessage(
 	channelAPI, content, splitOptions, {
-		suppressEmbeds = false
-	}={}
+		suppressEmbeds = false,
+	} = {}
 ) {
 	const contents = splitMessageRegex(content, splitOptions);
 	const messages = [];
@@ -94,7 +94,7 @@ export async function splitSendMessage(
 		: 0
 	);
 	for (let i = 0; i < contents.length; ++i) {
-		messages.push(await channelAPI.send({content: contents[i], flags}));
+		messages.push(await channelAPI.send({ content: contents[i], flags }));
 	}
 	return messages;
 }
