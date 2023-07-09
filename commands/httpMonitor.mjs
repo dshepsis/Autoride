@@ -11,7 +11,7 @@ const scopeChoices = [
 	'THIS CHANNEL',
 	'MINE',
 	'SINGLE URL',
-].map(c => ({name: c, value: c}));
+].map(c => ({ name: c, value: c }));
 
 // Used as choices for the remove subcommand
 const degreeChoices = [
@@ -19,7 +19,7 @@ const degreeChoices = [
 	'FOR ME IN ALL CHANNELS',
 	'FOR THIS CHANNEL',
 	'REMOVE COMPLETELY',
-].map(c => ({name: c, value: c}));
+].map(c => ({ name: c, value: c }));
 
 // For an array of urlObjs, returns a human readable message describing all of
 // them. The guild object is required to determine the tags corresponding to
@@ -45,8 +45,8 @@ async function urlObjsToHumanReadableStr(urlObjs, guild, {
 	for (const urlObj of urlObjs) {
 		const escapedURL = '`' + urlObj.url.replaceAll('`', '\\`') + '`';
 		const objHeader = (verbose ?
-			`• URL ${escapedURL}${urlObj.enabled ? '' : ' (disabled)'}, is being monitored in the following channels:`
-			: `• ${escapedURL}${urlObj.enabled ? '' : '(disabled)'}`
+			`- URL ${escapedURL}${urlObj.enabled ? '' : ' (disabled)'}, is being monitored in the following channels:`
+			: `- ${escapedURL}${urlObj.enabled ? '' : '(disabled)'}`
 		);
 		const strLines = [objHeader];
 		const notifyChannels = urlObj.notifyChannels;
@@ -56,8 +56,8 @@ async function urlObjsToHumanReadableStr(urlObjs, guild, {
 				memberMap.get(userId).user.tag
 			);
 			const line = (verbose ?
-				`└── <#${channelId}>${(notifyObj.info) ? `, with note "${notifyObj.info}"` : ''}, with the following users being notified: ${userTags.join(', ')}`
-				: `└── <#${channelId}>${(notifyObj.info) ? `"${notifyObj.info}"` : ''}: ${userTags.join(', ')}`
+				` - <#${channelId}>${(notifyObj.info) ? `, with note "${notifyObj.info}"` : ''}, with the following users being notified: ${userTags.join(', ')}`
+				: ` - <#${channelId}>${(notifyObj.info) ? `"${notifyObj.info}"` : ''}: ${userTags.join(', ')}`
 			);
 			strLines.push(line);
 		}
@@ -168,6 +168,11 @@ export const data = (new SlashCommandBuilder()
 	)
 	.setDefaultMemberPermissions(0)
 );
+
+/**
+ * @param { import("discord.js").CommandInteraction } interaction
+ * @returns {Promise<any>}
+ */
 export async function execute(interaction) {
 	await interaction.deferReply();
 	const guildId = interaction.guildId;

@@ -11,6 +11,11 @@ export const data = (new SlashCommandBuilder()
 		.setRequired(true)
 	)
 );
+
+/**
+ * @param { import("discord.js").CommandInteraction } interaction
+ * @returns {Promise<any>}
+ */
 export async function execute(interaction) {
 	const query = interaction.options.getString('title');
 	if (query.length > 150) {

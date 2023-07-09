@@ -1,6 +1,6 @@
 **__Saves:__**
 **Ōkami and Ōkami HD** :wolf:
-• [NG+ Any% Wii (NTSC-U)](https://cdn.discordapp.com/attachments/267650551481630721/272140714442358784/Okami_-_Wii_-_NG_Save_Any.rar) 
-• [NG+ PC](https://www.dropbox.com/sh/nkp7voqeweefumv/AABSZNlckUNrSvqjWuCxonJna?dl=0) (Place in `Program Files (x86)\Steam\userdata[Your Steam ID]\587620\remote\Steam`)
+- [NG+ Any% Wii (NTSC-U)](https://cdn.discordapp.com/attachments/267650551481630721/272140714442358784/Okami_-_Wii_-_NG_Save_Any.rar) 
+- [NG+ PC](https://www.dropbox.com/sh/nkp7voqeweefumv/AABSZNlckUNrSvqjWuCxonJna?dl=0) (Place in `Program Files (x86)\Steam\userdata[Your Steam ID]\587620\remote\Steam`)
 
 __Remember to check the pinned messages too__
