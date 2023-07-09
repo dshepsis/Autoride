@@ -64,7 +64,7 @@ export async function getReportStr(urlObjs, {
 		// A resolved promise indicates that a response was received, but that
 		// response may have been an HTTP error, so filter out acceptable status
 		// codes:
-		let line = `• ${escapedURL} `;
+		let line = `- ${escapedURL} `;
 		if (result.isRedirect) {
 			const escapedEndURL = '`' + result.endUrl.replaceAll('`', '\\`') + '`';
 			line += `redirects to ${escapedEndURL} which `;
@@ -181,7 +181,7 @@ export async function reportStatusCodesForGuild(client, guildId) {
 	for (const channelId in errorsPerChannel) {
 		const errors = errorsPerChannel[channelId];
 		const errorStr = (errors
-			.map(e => `• ${e.url}${(e.info) ? ` (${e.info})` : ''} results in ${e.errorDescription}.`)
+			.map(e => `- ${e.url}${(e.info) ? ` (${e.info})` : ''} results in ${e.errorDescription}.`)
 			.join('\n')
 		);
 		const mentionsSet = new Set();

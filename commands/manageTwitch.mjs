@@ -145,7 +145,7 @@ export const data = (new SlashCommandBuilder()
  * @returns {string}
  */
 function unorderedList(strings) {
-	return '\n\t• ' + strings.join('\n\t• ');
+	return '\n- ' + strings.join('\n- ');
 }
 
 /**

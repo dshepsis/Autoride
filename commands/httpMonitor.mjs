@@ -45,8 +45,8 @@ async function urlObjsToHumanReadableStr(urlObjs, guild, {
 	for (const urlObj of urlObjs) {
 		const escapedURL = '`' + urlObj.url.replaceAll('`', '\\`') + '`';
 		const objHeader = (verbose ?
-			`• URL ${escapedURL}${urlObj.enabled ? '' : ' (disabled)'}, is being monitored in the following channels:`
-			: `• ${escapedURL}${urlObj.enabled ? '' : '(disabled)'}`
+			`- URL ${escapedURL}${urlObj.enabled ? '' : ' (disabled)'}, is being monitored in the following channels:`
+			: `- ${escapedURL}${urlObj.enabled ? '' : '(disabled)'}`
 		);
 		const strLines = [objHeader];
 		const notifyChannels = urlObj.notifyChannels;
@@ -56,8 +56,8 @@ async function urlObjsToHumanReadableStr(urlObjs, guild, {
 				memberMap.get(userId).user.tag
 			);
 			const line = (verbose ?
-				`└── <#${channelId}>${(notifyObj.info) ? `, with note "${notifyObj.info}"` : ''}, with the following users being notified: ${userTags.join(', ')}`
-				: `└── <#${channelId}>${(notifyObj.info) ? `"${notifyObj.info}"` : ''}: ${userTags.join(', ')}`
+				` - <#${channelId}>${(notifyObj.info) ? `, with note "${notifyObj.info}"` : ''}, with the following users being notified: ${userTags.join(', ')}`
+				: ` - <#${channelId}>${(notifyObj.info) ? `"${notifyObj.info}"` : ''}: ${userTags.join(', ')}`
 			);
 			strLines.push(line);
 		}
