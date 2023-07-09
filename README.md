@@ -21,7 +21,12 @@ users and games, blocked users, and required keywords.
   URL. This is useful for checking whether the video for a leaderboard
   submission is a highlight (permanently hosted) as opposed to a basic archived
   past-broadcast, which would be automatically deleted after a some time.
-
+- `/manage-otd` — Configure the bot's on-this-day daily announcement feature.
+  Each day, the bot will post a message with a list of notable events that
+  occurred on the same day in past years. You can add, remove, and list out
+  events. Announcements will be posted automatically each day to the configured
+  channel if there are any such events, or you can manually post announcements
+  from any date whenever you want.
 
 # Scopes
 This bot needs the following OAuth2 Scopes (see the URL generator in the OAuth2
@@ -72,6 +77,4 @@ message to be sent.
 - Data commands:
     - Item value
     - Enemy health
-- Auride says (random)
 - Abbreviation finder / explainer (Maybe via wiki page?)
-- "On This Day" anniversary/history trivia routine.
