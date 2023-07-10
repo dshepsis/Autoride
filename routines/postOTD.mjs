@@ -2,9 +2,9 @@ import { postOTDAnnouncements } from '../util/otdUtils.mjs';
 
 export const name = 'postOTD';
 
-// 10 minutes. This is only meant
-// export const interval_ms = 10*60_000;
-export const interval_ms = 60_000;
+// 10 minutes. On-this-day announcements are only automatically posted once per
+// day, just past midnight, so it's okay if they're 10 minutes late.
+export const interval_ms = 10 * 60_000;
 export const enabled = true;
 export const initialDelay_ms = 5_000;
 
