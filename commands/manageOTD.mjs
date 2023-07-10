@@ -1,6 +1,10 @@
 import { SlashCommandBuilder, ChannelType } from 'discord.js';
 import * as otdUtils from '../util/otdUtils.mjs';
 
+import { splitMessageRegex } from '../util/splitMessageRegex.mjs';
+import { Replyable } from './command-util/Replyable.mjs';
+import { paginatedReply } from './command-util/paginatedReply.mjs';
+
 export const data = (new SlashCommandBuilder()
 	.setName('manage-otd')
 	.setDescription('Configure automatic "On this day" announcements of notable past events')
@@ -152,14 +156,22 @@ export async function execute(interaction) {
 		// If scope was 'all', eventFitler will be undefined, which returns all
 		// events.
 		const eventObjs = await otdUtils.getOTDEvents(guildId, eventFilter);
-		console.log(eventObjs);
-		const content = ((eventObjs.length === 0)
-			? `There are no events listed${contentScopeStr}.`
-			: `All events${contentScopeStr}:${eventObjs.map(
-				eventObj => `\n- ${otdUtils.formatFullDate(eventObj.date)} — ${eventObj.event}`
-			).join('')}`
+		if (eventObjs.length === 0) {
+			const content = `There are no events listed${contentScopeStr}.`;
+			return await interaction.reply({ content });
+		}
+		const content = (`All events${contentScopeStr}:${eventObjs.map(
+			eventObj => `\n- ${otdUtils.formatFullDate(eventObj.date)} — ${eventObj.event}`
+		).join('')}`);
+		const contents = splitMessageRegex(
+			content,
+			{ prepend: `All events${contentScopeStr} (Cont.):\n` }
 		);
-		return await interaction.reply({ content });
+		return await paginatedReply({
+			contents,
+			replyable: new Replyable({ interaction }),
+		});
+
 	}
 
 	if (subcommandName === 'remove') {
