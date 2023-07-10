@@ -94,7 +94,6 @@ export async function getOTDEvents(guildId, { scope, dateObj } = {}) {
 		await getOTDConfig(guildId)
         ?? makeDefault()
 	);
-	console.log(`Scope: "${scope}" and dateObj: "${formatFullDate(dateObj)}".`);
 	if (scope === undefined) {
 		if (dateObj !== undefined) {
 			throw new Error('dateObj option is specified, but scope is not. Please specify both or neither.');
