@@ -337,6 +337,14 @@ export async function postGuildOTDAnnouncement(discordClient, guildId) {
 		return false;
 	}
 
+	const announcementEmbeds = await makeOTDAnnouncementEmbeds(
+		guildId, today
+	);
+	// If there are no embeds for today, don't post anything:
+	if (announcementEmbeds === null) {
+		return false;
+	}
+
 	const otdChannelId = guildOTDConfig.otdChannel;
 	const otdChannelAPI = (
 		discordClient.channels.resolve(otdChannelId) // If channel is cached
@@ -347,14 +355,6 @@ export async function postGuildOTDAnnouncement(discordClient, guildId) {
 			).channels.fetch()
 		).get(otdChannelId)
 	);
-
-	const announcementEmbeds = await makeOTDAnnouncementEmbeds(
-		guildId, today
-	);
-	// If there are no embeds for today, don't post anything:
-	if (announcementEmbeds === null) {
-		return false;
-	}
 
 	for (const embed of announcementEmbeds) {
 		await otdChannelAPI.send({ embeds: [embed] });
