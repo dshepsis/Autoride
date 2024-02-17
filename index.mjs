@@ -95,7 +95,7 @@ for (const routine of routines) {
 			// is to return without calling setTimeout again:
 			console.error(`Routine "${routine.name}" failed with the following error, and was disabled. Restart index.mjs to run this routine again:`, RoutineError);
 			try {
-				await client.reportError(`Routine "${routine.name}" failed with a ${RoutineError.name} error. Please restart the bot to run this routine again.`);
+				await client.reportError(`Routine "${routine.name}" failed with a ${RoutineError.name} error. Please restart the bot to run this routine again. "${RoutineError.message}"`);
 			}
 			catch (ErrorReportingError) {
 				console.log(`ERROR! Failed to report an error with routine "${routine.name}". Restarting to hopefully fix this...`);

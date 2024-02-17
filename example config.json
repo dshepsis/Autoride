@@ -4,5 +4,14 @@
 	"clientId": "This identifies your bot as a user. After setting up your bot, open up its application page, then click 'OAuth2' in the left sidebar. Click the 'Copy' button under the 'CLIENT ID' section. Paste that here.",
 	"guildIds": ["This is an array of the ids of the guilds you have added your bot to. Within your normal Discord window, open your Settings. In the left sidebar, click 'Advanced'. Enable the 'Developer Mode' switch if you haven't already. Then, close the Settings. In the server bar, right click the server you want to add/have added your bot to. At the bottom of the right-click-menu, click 'Copy ID'. Paste that here."],
 	"developmentGuildId": "This is the id of a single guild which you've added your bot to, and which you want to function as your development guild. Commands which export`inDevelopment: true` are added only to this guild, and not to the guilds listed in the guildIds array, but all commands always are added to the development guild, even if it's not listed in the guildIds array.",
-	"heartbeatURL": "This is an HTTP/HTTPS URL to which the bot will make requests every 5 minutes via the httpHeartbeat.mjs routine. It can be used for uptime monitoring via various services."
+	"developmentGuildTestChannel": "This is the id of a channel within the development guild where some error messages will be sent. This can help you debug the bot without having to monitor the server log itself.",
+	"heartbeatURL": "This is an HTTP/HTTPS URL to which the bot will make requests every 5 minutes via the httpHeartbeat.mjs routine. It can be used for uptime monitoring via various services.",
+	"twitch": {
+		"clientId": "This identifies your bot to the Twitch.tv API. This is used for the /twitch-post, /is-twitch-highlight, and /manage-twitch commands, and the monitorTwitchStreams routine. You can obtain this from https://dev.twitch.tv/console.",
+		"clientSecret": "This is your bot's credentials for the Twitch.tv API. You must keep this secret."
+	},
+	"wiki": {
+		"URL": "This is the URL of a MediaWiki wiki. This is used for the /wiki and /gloss commands. This usually has the form 'https://myWikiURL.com/'. You must include the slash at the end, and you must be able to reach pages by appending their titles to this URL, e.g. 'https://myWikiURL.com/Glossary'.",
+		"apiURL": "This is the URL of that wiki's api. This usually has the form 'https://myWikiURL.com/api.php?'. You must include the question mark at the end."
+	}
 }

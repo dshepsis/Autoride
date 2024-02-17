@@ -19,11 +19,17 @@ export async function execute(interaction) {
 		}
 		catch (error) {
 			console.error(`The "${interaction.commandName}" command failed with the following error:`, error);
+
+			// Send a message to the development guild that there was an error
+			// with a command, so that the bot owner can know and investigate.
+			interaction.client.reportError(`The "${interaction.commandName}" command failed with an ${error.name} error: "${error.message}"`);
+
 			const content = `There was an error while executing this "${interaction.commandName}" command!`;
 			try {
-				// If the interaction was already replied-to or deferred before the
-				// error, use the appropriate alternative reply function instead.
-				// Otherwise, .reply will throw an "INTERACTION_ALREADY_REPLIED" error.
+				// If the interaction was already replied-to or deferred before
+				// the error, use the appropriate alternative reply function
+				// instead. Otherwise, .reply will throw an
+				// "INTERACTION_ALREADY_REPLIED" error.
 				if (interaction.replied) {
 					return await interaction.followUp({ content });
 				}
