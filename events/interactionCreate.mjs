@@ -22,7 +22,7 @@ export async function execute(interaction) {
 
 			// Send a message to the development guild that there was an error
 			// with a command, so that the bot owner can know and investigate.
-			interaction.client.reportError(`The "${interaction.commandName}" command failed with an ${error.name} error: "${error.message}"`);
+			interaction.client.reportError(`User ${interaction.user.tag} in guild "${interaction.guild.name}" #${interaction.channel.name} executed the "${interaction.commandName}" command, which failed with an ${error.name} error: "${error.message}"`);
 
 			const content = `There was an error while executing this "${interaction.commandName}" command!`;
 			try {
