@@ -144,13 +144,13 @@ message to be sent.
 29. Type `pm2 start index.mjs -n Autoride` to start Autoride through PM2 as a task named "Autoride". You will need to refer to this name in future PM2 commands when managing it.
 30. Type `pm2 logs` and monitor Autoride's debug output for a bit to make sure it's running properly.
     - Ideally, you'll see something like
-    ```
-1|Autoride | Attempting to log in...
-1|Autoride | Success! Logged in.
-1|Autoride | Client ready as Autoride#1234. Setting up commands...
-1|Autoride | Finished setting up commands!
-1|Autoride | Running routine "monitorTwitchStreams"...
-    ```
+      ```
+      1|Autoride | Attempting to log in...
+      1|Autoride | Success! Logged in.
+      1|Autoride | Client ready as Autoride#1234. Setting up commands...
+      1|Autoride | Finished setting up commands!
+      1|Autoride | Running routine "monitorTwitchStreams"...
+      ```
     - If it's outputting any obvious errors at this point, you'll want to type `pm2 stop Autoride` and then figure out the cause. It will most likely be a mistake you made filling out config.json. Once you're ready to try again, type `pm2 restart Autoride`.
 31. Once you have your bot running and in good health, type `pm2 save` to ensure pm2 will restart it in the event of a power cycle.
 32. Use `scp` or other means to regularly make backup copies of `config.js` and the `guild-config` directory. This is important as SD cards (and other drives) can fail without warning. However, be sure to NEVER share your Discord/Twitch/other tokens with anyone. Make sure any files which contain them are added to your `.gitignore` file in any git directory the backups are in. Otherwise, bots will instantly automatically find your tokens and steal them to maliciously impersonate your bot.
