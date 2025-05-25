@@ -21,7 +21,7 @@
     "@mapbox/node-pre-gyp": "^1.0.11",
     "@twurple/api": "^5.3.4",
     "@twurple/auth": "^5.3.4",
-    "ajv": "^8.12.0",
+    "ajv": "^8.17.1",
     "discord.js": "^14.14.1",
     "ipaddr.js": "^2.1.0",
     "tar": "^6.2.0",

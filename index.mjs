@@ -47,8 +47,8 @@ for (const event of events) {
 // log in, so we await:
 console.log('Attempting to log in...');
 const LOGIN_RETRIES = 5;
-const LOGIN_BASE_DELAY_MS = 100;
-const LOGIN_EXPONENT_BASE = 2;
+const LOGIN_BASE_DELAY_MS = 1000;
+const LOGIN_EXPONENT_BASE = 2.5;
 let attempts = 0;
 while (true) {
 	try {

@@ -474,7 +474,7 @@ async function* getStreamsManyIds(idArr, idType) {
 				continue GroupLoop;
 			}
 			catch (fetchError) {
-				console.error(`Request for streams by ${idType} failed attempt ${attempts + 1}.${(attempts < MAX_ATTEMPTS) ? ' Retrying...' : ''}`);
+				console.error(`Request for streams by ${idType} failed attempt ${attempts + 1}.${(attempts < MAX_ATTEMPTS) ? ' Retrying...' : ''}`, fetchError);
 				errCause = fetchError;
 				await wait(RETRY_DELAY_MS);
 			}

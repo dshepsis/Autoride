@@ -5,10 +5,8 @@ import { splitReplyInteraction } from '../util/splitMessageRegex.mjs';
 const ALREADY_PRESENT = Symbol('Color role is already present in this guild.');
 async function addColorRole(guildId, role, message) {
 	const guildColorRoles = await guildConfig.get(guildId, 'colorRoles');
-	const roleData = {
-		name: role.name,
-		message,
-	};
+	const roleData = { name: role.name };
+	if (message) roleData.message = message; // Message is optional
 	if (guildColorRoles === undefined) {
 		return await guildConfig.set(guildId, 'colorRoles', { [role.id]: roleData });
 	}
